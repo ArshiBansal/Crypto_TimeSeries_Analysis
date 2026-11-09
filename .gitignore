@@ -1,0 +1,66 @@
+# ── IDE ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.code-workspace
+
+# ── Python ───────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ── Virtual Environments ─────────────────────────────────────────────
+.env
+.venv/
+venv/
+env/
+ENV/
+
+# ── Jupyter ──────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.nbconvert/
+profile_default/
+ipython_config.py
+
+# ── PySpark / Java ───────────────────────────────────────────────────
+derby.log
+metastore_db/
+spark-warehouse/
+*.log
+
+# ── HuggingFace cache (datasets fetched via library – never stored here) ──
+~/.cache/huggingface/
+.cache/
+*.arrow
+*.parquet.tmp
+
+# ── Processed data & artifacts (large files – tracked via DVC if needed) ──
+processed/
+artifacts/
+reports/figures/
+reports/metrics/
+
+# ── Configs with secrets ─────────────────────────────────────────────
+configs/secrets.yaml
+configs/*.local.yaml
+*.env
+.env.*
+
+# ── OS ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Testing ──────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
