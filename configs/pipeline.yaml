@@ -1,0 +1,83 @@
+# ── Datasets (fetched via HuggingFace `datasets` library – never downloaded) ──
+datasets:
+  primary:
+    repo_id: "WinkingFace/CryptoLM-Bitcoin-BTC-USDT"
+    split: "train"
+    streaming: true          # stream rows; do NOT cache to disk
+    trust_remote_code: false
+  secondary:
+    repo_id: "lanasx3/crypto-market-datasets"
+    split: "train"
+    streaming: true
+    trust_remote_code: false
+
+# ── Spark ─────────────────────────────────────────────────────────────
+spark:
+  app_name: "BTC_Microstructure"
+  master: "local[*]"
+  config:
+    spark.sql.shuffle.partitions: 8
+    spark.driver.memory: "4g"
+    spark.executor.memory: "4g"
+    spark.sql.execution.arrow.pyspark.enabled: "true"
+
+# ── Feature Engineering ───────────────────────────────────────────────
+features:
+  rolling_windows: [7, 14, 30, 60]       # periods (in bars)
+  return_lags: [1, 2, 3, 5, 10]
+  volatility_proxy: "close_to_close"     # or "parkinson" / "garman_klass"
+  target_horizon: 1                       # bars ahead for forecasting target
+
+# ── Train / Validation / Test Split (chronological – no random shuffle) ──
+splits:
+  train_ratio: 0.70
+  val_ratio:   0.15
+  test_ratio:  0.15
+
+# ── Models ────────────────────────────────────────────────────────────
+models:
+  lightgbm:
+    n_estimators: 500
+    learning_rate: 0.05
+    num_leaves: 63
+    early_stopping_rounds: 50
+  catboost:
+    iterations: 500
+    learning_rate: 0.05
+    depth: 6
+    early_stopping_rounds: 50
+  garch:
+    p: 1
+    q: 1
+    dist: "normal"
+  hmm:
+    n_components: 3           # latent market regimes
+    covariance_type: "full"
+    n_iter: 200
+  gmm:
+    n_components: 3
+    covariance_type: "full"
+    max_iter: 200
+  isolation_forest:
+    n_estimators: 200
+    contamination: 0.02
+  cusum:
+    threshold: "auto"         # calibrated on training partition only
+
+# ── Artifacts ─────────────────────────────────────────────────────────
+artifacts:
+  base_dir: "artifacts"
+  models_dir: "artifacts/models"
+  scalers_dir: "artifacts/scalers"
+  encoders_dir: "artifacts/encoders"
+  processed_dir: "processed"
+
+# ── MLflow ────────────────────────────────────────────────────────────
+mlflow:
+  tracking_uri: "mlruns"
+  experiment_name: "btc_microstructure"
+
+# ── Reporting ─────────────────────────────────────────────────────────
+reports:
+  figures_dir: "reports/figures"
+  metrics_dir: "reports/metrics"

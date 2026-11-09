@@ -1,0 +1,17 @@
+# Experiment run log — append one entry per run
+# Format: YAML list; populated automatically by src/models/experiment_tracker.py
+
+# Example entry:
+# - run_id: "run_001"
+#   model: "lightgbm"
+#   target: "log_return_1"
+#   train_end: "2022-12-31"
+#   val_end: "2023-06-30"
+#   test_end: "2023-12-31"
+#   metrics:
+#     mae: 0.0021
+#     rmse: 0.0034
+#     smape: 12.4
+#   artifact_path: "artifacts/models/lgbm_run001.pkl"
+#   notes: ""
+runs: []
