@@ -1,0 +1,49 @@
+# ── Core ─────────────────────────────────────────────────────────────
+python>=3.10
+
+# ── PySpark ──────────────────────────────────────────────────────────
+pyspark>=3.5.0
+
+# ── Data / HuggingFace (fetch via library – no manual downloads) ──────
+datasets>=2.19.0
+huggingface_hub>=0.22.0
+pyarrow>=14.0.0
+pandas>=2.1.0
+numpy>=1.26.0
+
+# ── ML ───────────────────────────────────────────────────────────────
+scikit-learn>=1.4.0
+lightgbm>=4.3.0
+catboost>=1.2.0
+
+# ── Deep Learning ────────────────────────────────────────────────────
+torch>=2.2.0
+pytorch-forecasting>=1.0.0   # TCN, PatchTST
+darts>=0.29.0                 # alternative time-series DL wrappers
+
+# ── Econometrics ─────────────────────────────────────────────────────
+statsmodels>=0.14.0           # ARIMA
+arch>=6.3.0                   # GARCH
+hmmlearn>=0.3.0               # HMM
+
+# ── Change-Point & Anomaly ───────────────────────────────────────────
+ruptures>=1.1.9               # CUSUM / change-point detection
+stumpy>=1.12.0                # Matrix Profile
+# tick                        # Hawkes Process – install separately if tick data confirmed
+
+# ── Visualisation ────────────────────────────────────────────────────
+matplotlib>=3.8.0
+seaborn>=0.13.0
+plotly>=5.20.0
+
+# ── Streamlit App ────────────────────────────────────────────────────
+streamlit>=1.33.0
+
+# ── Experiment Tracking ──────────────────────────────────────────────
+mlflow>=2.12.0
+
+# ── Utilities ────────────────────────────────────────────────────────
+pyyaml>=6.0
+joblib>=1.3.0
+tqdm>=4.66.0
+python-dotenv>=1.0.0
