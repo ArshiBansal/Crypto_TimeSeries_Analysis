@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="360" viewBox="0 0 1440 360" role="img" aria-labelledby="title description">
+  <title id="title">Bitcoin Market Intelligence</title>
+  <desc id="description">Abstract dark blue market chart with teal and muted lavender data lines.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#172635"/>
+      <stop offset="0.58" stop-color="#1D3040"/>
+      <stop offset="1" stop-color="#273447"/>
+    </linearGradient>
+    <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5B9E99" stop-opacity=".3"/>
+      <stop offset="1" stop-color="#5B9E99" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="grid" width="72" height="48" patternUnits="userSpaceOnUse">
+      <path d="M72 0H0V48" fill="none" stroke="#B8C6D1" stroke-opacity=".09" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1440" height="360" rx="26" fill="url(#background)"/>
+  <rect x="1" y="1" width="1438" height="358" rx="25" fill="url(#grid)" stroke="#718494" stroke-opacity=".24"/>
+  <circle cx="1270" cy="72" r="152" fill="#6F7EA7" opacity=".09"/>
+  <circle cx="1130" cy="350" r="210" fill="#5B9E99" opacity=".08"/>
+
+  <g fill="none" stroke="#D3DEE5" stroke-opacity=".14">
+    <path d="M64 96H1376"/>
+    <path d="M64 156H1376"/>
+    <path d="M64 216H1376"/>
+    <path d="M64 276H1376"/>
+  </g>
+
+  <path d="M64 270
+    C112 250 142 262 182 225
+    S250 216 284 238
+    S345 172 390 194
+    S452 155 490 177
+    S552 199 590 160
+    S657 151 694 174
+    S754 128 800 144
+    S858 173 895 126
+    S956 142 996 111
+    S1058 130 1093 88
+    S1158 105 1198 73
+    S1261 92 1300 53
+    S1352 66 1376 40
+    L1376 310H64Z" fill="url(#area)"/>
+  <path d="M64 270
+    C112 250 142 262 182 225
+    S250 216 284 238
+    S345 172 390 194
+    S452 155 490 177
+    S552 199 590 160
+    S657 151 694 174
+    S754 128 800 144
+    S858 173 895 126
+    S956 142 996 111
+    S1058 130 1093 88
+    S1158 105 1198 73
+    S1261 92 1300 53
+    S1352 66 1376 40" fill="none" stroke="#79B7AE" stroke-linecap="round" stroke-width="4"/>
+
+  <path d="M64 244
+    C128 226 153 240 203 207
+    S270 198 308 216
+    S366 160 416 174
+    S475 143 524 158
+    S585 176 622 142
+    S680 133 720 148
+    S780 111 824 124
+    S884 148 925 109
+    S982 122 1022 94
+    S1084 110 1124 76
+    S1184 91 1223 61
+    S1280 73 1320 47
+    S1352 52 1376 34" fill="none" stroke="#93A0C2" stroke-linecap="round" stroke-opacity=".8" stroke-width="2"/>
+
+  <g fill="#AFC2CF">
+    <rect x="112" y="292" width="12" height="24" rx="3" opacity=".42"/>
+    <rect x="180" y="278" width="12" height="38" rx="3" opacity=".48"/>
+    <rect x="248" y="286" width="12" height="30" rx="3" opacity=".36"/>
+    <rect x="316" y="260" width="12" height="56" rx="3" opacity=".5"/>
+    <rect x="384" y="272" width="12" height="44" rx="3" opacity=".38"/>
+    <rect x="452" y="250" width="12" height="66" rx="3" opacity=".46"/>
+    <rect x="520" y="280" width="12" height="36" rx="3" opacity=".34"/>
+    <rect x="588" y="262" width="12" height="54" rx="3" opacity=".46"/>
+    <rect x="656" y="270" width="12" height="46" rx="3" opacity=".38"/>
+    <rect x="724" y="236" width="12" height="80" rx="3" opacity=".48"/>
+    <rect x="792" y="252" width="12" height="64" rx="3" opacity=".36"/>
+    <rect x="860" y="242" width="12" height="74" rx="3" opacity=".45"/>
+    <rect x="928" y="258" width="12" height="58" rx="3" opacity=".35"/>
+    <rect x="996" y="220" width="12" height="96" rx="3" opacity=".46"/>
+    <rect x="1064" y="240" width="12" height="76" rx="3" opacity=".38"/>
+    <rect x="1132" y="214" width="12" height="102" rx="3" opacity=".46"/>
+    <rect x="1200" y="228" width="12" height="88" rx="3" opacity=".39"/>
+    <rect x="1268" y="194" width="12" height="122" rx="3" opacity=".48"/>
+    <rect x="1336" y="206" width="12" height="110" rx="3" opacity=".4"/>
+  </g>
+
+  <g fill="#79B7AE">
+    <circle cx="390" cy="194" r="5"/>
+    <circle cx="694" cy="174" r="5"/>
+    <circle cx="996" cy="111" r="5"/>
+    <circle cx="1300" cy="53" r="5"/>
+  </g>
+</svg>
