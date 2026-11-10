@@ -113,10 +113,11 @@ def compute_matrix_profile(
 def detect_changepoints_cusum(
     series: np.ndarray,
     n_bkps: int = 5,
-    model: str = "rbf",
+    model: str = "l2",
+    max_samples: int = 10_000,
 ) -> list[int]:
     """
-    Detect structural change-points using ruptures (CUSUM / Pelt).
+    Detect structural change-points using ruptures (PELT algorithm).
 
     IMPORTANT: Call this only on training partition for threshold calibration.
 
@@ -124,9 +125,15 @@ def detect_changepoints_cusum(
     ----------
     series : np.ndarray  (1-D or 2-D [n_samples, n_features])
     n_bkps : int
-        Number of breakpoints to detect.
+        Number of breakpoints to detect (used only for reference; PELT with
+        a penalty selects the count automatically).
     model : str
-        Cost function: 'rbf', 'l2', 'l1', 'normal'.
+        Cost function: 'l2' (default, O(n) memory, detects mean shifts),
+        'normal' (mean+variance shifts), 'rbf' (kernel, avoid on large series
+        — O(n²) memory).
+    max_samples : int
+        Cap on series length before fitting.  'rbf' requires O(n²) memory;
+        keep this small (≤10 000) when using rbf.
 
     Returns
     -------
@@ -134,6 +141,11 @@ def detect_changepoints_cusum(
     """
     if series.ndim == 1:
         series = series.reshape(-1, 1)
+
+    # Subsample to avoid OOM on large series (especially for rbf kernel)
+    if len(series) > max_samples:
+        step = len(series) // max_samples
+        series = series[::step]
 
     algo = rpt.Pelt(model=model).fit(series)
     breakpoints = algo.predict(pen=10)   # pen controls sensitivity
