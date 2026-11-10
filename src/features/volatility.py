@@ -51,6 +51,7 @@ def add_volatility_features(
     """
     rolling_windows = rolling_windows or [7, 14, 30, 60]
     vol_lags = vol_lags or [1, 2]
+    ln2 = math.log(2)
 
     for win in rolling_windows:
         rw = Window.orderBy(ts_col).rowsBetween(-(win - 1), 0)
@@ -72,25 +73,34 @@ def add_volatility_features(
                 F.lag(col_name, lag).over(Window.orderBy(ts_col)),
             )
 
-        # Parkinson proxy: sqrt(1/(4*ln2) * (ln(H/L))^2)
         if has_ohlc:
-            ln2 = math.log(2)
+            # Parkinson proxy: sqrt(1/(4*ln2) * mean(ln(H/L))^2)
+            # Guard: low > 0 required for log(H/L)
+            safe_hl_log = F.when(
+                (F.col("low") > 0) & (F.col("high") > 0),
+                F.pow(F.log(F.col("high") / F.col("low")), 2),
+            ).otherwise(F.lit(None).cast("double"))
+
             df = df.withColumn(
                 f"parkinson_vol_{win}",
-                F.sqrt(
-                    F.avg(
-                        F.pow(F.log(F.col("high") / F.col("low")), 2)
-                    ).over(rw) / (4 * ln2)
-                ),
+                F.sqrt(F.avg(safe_hl_log).over(rw) / (4 * ln2)),
             )
+
             # Garman-Klass proxy
-            df = df.withColumn(
-                "_gk_term1",
+            # Guard: open > 0 and low > 0 required
+            safe_hl_sq = F.when(
+                (F.col("low") > 0) & (F.col("high") > 0),
                 0.5 * F.pow(F.log(F.col("high") / F.col("low")), 2),
-            ).withColumn(
-                "_gk_term2",
+            ).otherwise(F.lit(None).cast("double"))
+
+            safe_co_sq = F.when(
+                (F.col("open") > 0) & (F.col("close") > 0),
                 (2 * ln2 - 1) * F.pow(F.log(F.col("close") / F.col("open")), 2),
-            ).withColumn(
+            ).otherwise(F.lit(None).cast("double"))
+
+            df = df.withColumn("_gk_term1", safe_hl_sq)
+            df = df.withColumn("_gk_term2", safe_co_sq)
+            df = df.withColumn(
                 f"garman_klass_vol_{win}",
                 F.sqrt(F.avg(F.col("_gk_term1") - F.col("_gk_term2")).over(rw)),
             )

@@ -68,6 +68,22 @@ def build_feature_pipeline(
     target_horizon: int = cfg.get("target_horizon", 1)
     has_ohlc = all(c in df.columns for c in ["open", "high", "low", "close"])
 
+    # Step 0 – Cast any string-typed numeric columns to DoubleType.
+    # The HuggingFace dataset stores OHLCV values as strings (e.g. "4164.02000000").
+    # Spark 4 ANSI mode refuses to compare STRING vs integer 0, so we normalise
+    # all numeric-looking columns to double before any arithmetic.
+    _NUMERIC_COLS = [
+        "open", "high", "low", "close", "volume",
+        "MA_20", "MA_50", "MA_200", "RSI", "%K", "%D", "ADX", "ATR",
+        "Trendline", "MACD", "BL_Upper", "BL_Lower", "Signal", "Histogram",
+        "MN_Upper", "MN_Lower", "month",
+    ]
+    for _col in _NUMERIC_COLS:
+        if _col in df.columns:
+            col_type = dict(df.dtypes).get(_col, "")
+            if col_type == "string":
+                df = df.withColumn(_col, F.col(_col).cast("double"))
+
     # Step 1 – Returns
     df = add_return_features(
         df, close_col=close_col, lags=return_lags,

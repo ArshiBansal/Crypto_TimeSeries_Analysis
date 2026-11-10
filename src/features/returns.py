@@ -52,17 +52,23 @@ def add_return_features(
 
     w = Window.orderBy(ts_col)
 
-    # Simple return
+    # Simple return  — guard against prev_close == 0
     prev_close = F.lag(close_col, 1).over(w)
     df = df.withColumn("prev_close", prev_close)
     df = df.withColumn(
         "simple_return",
-        (F.col(close_col) - F.col("prev_close")) / F.col("prev_close"),
+        F.when(
+            F.col("prev_close").isNotNull() & (F.col("prev_close") != 0),
+            (F.col(close_col) - F.col("prev_close")) / F.col("prev_close"),
+        ).otherwise(F.lit(None).cast("double")),
     )
-    # Log return
+    # Log return  — guard against prev_close <= 0 (log undefined)
     df = df.withColumn(
         "log_return",
-        F.log(F.col(close_col) / F.col("prev_close")),
+        F.when(
+            F.col("prev_close").isNotNull() & (F.col("prev_close") > 0) & (F.col(close_col) > 0),
+            F.log(F.col(close_col) / F.col("prev_close")),
+        ).otherwise(F.lit(None).cast("double")),
     )
     df = df.drop("prev_close")
 

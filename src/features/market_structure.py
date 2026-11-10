@@ -44,26 +44,38 @@ def add_market_structure_features(
     for win in rolling_windows:
         rw = Window.orderBy(ts_col).rowsBetween(-(win - 1), 0)
 
-        # Price range (normalised)
+        # Price range (normalised by close) — guard close == 0
         df = df.withColumn(
             f"price_range_{win}",
-            F.avg((F.col(high_col) - F.col(low_col)) / F.col(close_col)).over(rw),
+            F.avg(
+                F.when(
+                    F.col(close_col) != 0,
+                    (F.col(high_col) - F.col(low_col)) / F.col(close_col),
+                ).otherwise(F.lit(None).cast("double"))
+            ).over(rw),
         )
 
-        # Rolling peak and drawdown
+        # Rolling peak and drawdown — guard rolling_max == 0
         rolling_max = F.max(close_col).over(rw)
         df = df.withColumn(
             f"rolling_drawdown_{win}",
-            (F.col(close_col) - rolling_max) / rolling_max,
+            F.when(
+                rolling_max.isNotNull() & (rolling_max != 0),
+                (F.col(close_col) - rolling_max) / rolling_max,
+            ).otherwise(F.lit(None).cast("double")),
         )
 
-        # Momentum: close vs rolling mean
+        # Momentum: close vs rolling mean — guard avg_close == 0
+        avg_close = F.avg(close_col).over(rw)
         df = df.withColumn(
             f"momentum_{win}",
-            F.col(close_col) / F.avg(close_col).over(rw) - 1,
+            F.when(
+                avg_close.isNotNull() & (avg_close != 0),
+                F.col(close_col) / avg_close - 1,
+            ).otherwise(F.lit(None).cast("double")),
         )
 
-        # Trend slope proxy
+        # Trend slope proxy — division by constant `win` is always safe
         lag_close = F.lag(close_col, win).over(w_order)
         df = df.withColumn(
             f"trend_slope_{win}",

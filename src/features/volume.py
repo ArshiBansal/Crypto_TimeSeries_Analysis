@@ -50,9 +50,14 @@ def add_volume_features(
         rw = Window.orderBy(ts_col).rowsBetween(-(win - 1), 0)
         roll_col = f"rolling_volume_{win}"
         df = df.withColumn(roll_col, F.avg(volume_col).over(rw))
+
+        # volume_surprise: guard against rolling mean == 0
         df = df.withColumn(
             f"volume_surprise_{win}",
-            F.col(volume_col) / F.col(roll_col) - 1,
+            F.when(
+                F.col(roll_col).isNotNull() & (F.col(roll_col) != 0),
+                F.col(volume_col) / F.col(roll_col) - 1,
+            ).otherwise(F.lit(None).cast("double")),
         )
 
     for lag in lag_volumes:
@@ -72,7 +77,10 @@ def add_volume_features(
     if taker_col in df.columns:
         df = df.withColumn(
             "taker_imbalance",
-            F.col(taker_col) / F.col(volume_col),
+            F.when(
+                F.col(volume_col).isNotNull() & (F.col(volume_col) != 0),
+                F.col(taker_col) / F.col(volume_col),
+            ).otherwise(F.lit(None).cast("double")),
         )
 
     return df
