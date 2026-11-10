@@ -36,9 +36,10 @@ derby.log
 metastore_db/
 spark-warehouse/
 *.log
+# CatBoost training history is reproducible and not needed by the app.
+catboost_info/
 
-# ── HuggingFace cache (datasets fetched via library – never stored here) ──
-~/.cache/huggingface/
+# ── Local caches (including repository-local Hugging Face caches) ──────
 .cache/
 *.arrow
 *.parquet.tmp
@@ -87,4 +88,3 @@ htmlcov/
 # ── Windows-specific ─────────────────────────────────────────────────
 $RECYCLE.BIN/
 *.lnk
-
