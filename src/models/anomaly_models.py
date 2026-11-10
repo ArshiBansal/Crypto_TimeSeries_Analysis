@@ -11,6 +11,7 @@ Models
 """
 from __future__ import annotations
 
+import math
 from pathlib import Path as _Path
 _PROJECT_ROOT   = _Path(__file__).resolve().parent.parent.parent
 _DEFAULT_CONFIG = str(_PROJECT_ROOT / "configs" / "pipeline.yaml")
@@ -137,16 +138,23 @@ def detect_changepoints_cusum(
 
     Returns
     -------
-    list[int] – indices of detected change-points (last element = len(series)).
+    list[int] – indices in the original series (last element = len(series)).
     """
     if series.ndim == 1:
         series = series.reshape(-1, 1)
 
-    # Subsample to avoid OOM on large series (especially for rbf kernel)
-    if len(series) > max_samples:
-        step = len(series) // max_samples
+    if max_samples < 1:
+        raise ValueError("max_samples must be a positive integer.")
+
+    original_length = len(series)
+    step = 1
+    # Subsample to avoid OOM on large series (especially for rbf kernel).
+    if original_length > max_samples:
+        step = math.ceil(original_length / max_samples)
         series = series[::step]
 
     algo = rpt.Pelt(model=model).fit(series)
     breakpoints = algo.predict(pen=10)   # pen controls sensitivity
+    if step > 1:
+        breakpoints = [min(point * step, original_length) for point in breakpoints]
     return breakpoints
