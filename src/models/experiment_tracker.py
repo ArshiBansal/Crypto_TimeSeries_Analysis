@@ -10,8 +10,9 @@ import yaml
 import datetime
 from pathlib import Path
 
-
-EXPERIMENTS_FILE = "configs/experiments.yaml"
+# Always resolve relative to project root (this file lives at src/models/)
+_PROJECT_ROOT    = Path(__file__).resolve().parent.parent.parent
+EXPERIMENTS_FILE = str(_PROJECT_ROOT / "configs" / "experiments.yaml")
 
 
 def log_run(
@@ -61,8 +62,14 @@ def log_run(
     }
 
     exp_path = Path(EXPERIMENTS_FILE)
-    with open(exp_path, "r") as f:
-        data = yaml.safe_load(f) or {"runs": []}
+    exp_path.parent.mkdir(parents=True, exist_ok=True)   # create configs/ if missing
+
+    # Load existing data, or start fresh if file doesn't exist yet
+    if exp_path.exists():
+        with open(exp_path, "r") as f:
+            data = yaml.safe_load(f) or {"runs": []}
+    else:
+        data = {"runs": []}
 
     data["runs"].append(entry)
 
