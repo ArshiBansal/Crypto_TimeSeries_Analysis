@@ -54,6 +54,7 @@ configs/secrets.yaml
 configs/*.local.yaml
 *.env
 .env.*
+configs/.env
 
 # ── OS ───────────────────────────────────────────────────────────────
 .DS_Store
@@ -64,3 +65,26 @@ desktop.ini
 .pytest_cache/
 .coverage
 htmlcov/
+
+# ── Streamlit ────────────────────────────────────────────────────────
+# Keep .streamlit/config.toml (theme/server settings — safe to commit)
+# Ignore secrets file which may contain API keys
+.streamlit/secrets.toml
+
+# ── Streamlit Cloud deployment cache ─────────────────────────────────
+.streamlit/*.log
+
+# ── DVC (data version control – optional) ────────────────────────────
+.dvc/tmp/
+.dvc/cache/
+/tmp/
+
+# ── Notebook output / scratch ────────────────────────────────────────
+# Notebook source is committed; large cell outputs are cleared before push
+# (use `jupyter nbconvert --clear-output` or nbstripout pre-commit hook)
+*.nbconvert.py
+
+# ── Windows-specific ─────────────────────────────────────────────────
+$RECYCLE.BIN/
+*.lnk
+
