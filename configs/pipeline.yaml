@@ -7,6 +7,7 @@ datasets:
     trust_remote_code: false
   secondary:
     repo_id: "lanasx3/crypto-market-datasets"
+    name: "klines_spot"          # BTC/USDT spot OHLCV candles
     split: "train"
     streaming: true
     trust_remote_code: false
@@ -15,6 +16,9 @@ datasets:
 spark:
   app_name: "BTC_Microstructure"
   master: "local[*]"
+  java_home: "C:\\Program Files\\Java\\jdk-17"
+  #   Pinned to Java 17 — overrides Oracle's javapath (which resolves Java 25).
+  #   PySpark 4.x supports Java 17 and 21 only; Java 25 is NOT supported.
   config:
     spark.sql.shuffle.partitions: 8
     spark.driver.memory: "4g"
