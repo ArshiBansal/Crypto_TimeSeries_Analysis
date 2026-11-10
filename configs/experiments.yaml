@@ -1,17 +1,53 @@
-# Experiment run log — append one entry per run
-# Format: YAML list; populated automatically by src/models/experiment_tracker.py
-
-# Example entry:
-# - run_id: "run_001"
-#   model: "lightgbm"
-#   target: "log_return_1"
-#   train_end: "2022-12-31"
-#   val_end: "2023-06-30"
-#   test_end: "2023-12-31"
-#   metrics:
-#     mae: 0.0021
-#     rmse: 0.0034
-#     smape: 12.4
-#   artifact_path: "artifacts/models/lgbm_run001.pkl"
-#   notes: ""
-runs: []
+runs:
+- run_id: run_20261110_134428
+  model: Naive
+  target: target_log_return_1
+  train_end: '2019-07-19'
+  val_end: '2019-12-16'
+  test_end: '2020-05-14'
+  metrics:
+    mae: 0.0009698346947311611
+    rmse: 0.002357636042705769
+    smape: 151.04577781200447
+  artifact_path: n/a
+  notes: ''
+  logged_at: '2026-11-10T13:44:28.185455'
+- run_id: run_20261110_134428
+  model: ARIMA(1,0,1)
+  target: target_log_return_1
+  train_end: '2019-07-19'
+  val_end: '2019-12-16'
+  test_end: '2020-05-14'
+  metrics:
+    mae: 0.0007037274943208082
+    rmse: 0.0020208649912568898
+    smape: 197.25941451002714
+  artifact_path: n/a
+  notes: ''
+  logged_at: '2026-11-10T13:44:28.194944'
+- run_id: run_20261110_134428
+  model: LightGBM
+  target: target_log_return_1
+  train_end: '2019-07-19'
+  val_end: '2019-12-16'
+  test_end: '2020-05-14'
+  metrics:
+    mae: 0.0007042598637476468
+    rmse: 0.0020240826716745163
+    smape: 194.10730359363225
+  artifact_path: n/a
+  notes: ''
+  logged_at: '2026-11-10T13:44:28.416470'
+- run_id: run_20261110_134428
+  model: CatBoost
+  target: target_log_return_1
+  train_end: '2019-07-19'
+  val_end: '2019-12-16'
+  test_end: '2020-05-14'
+  metrics:
+    mae: 0.0007037324769550923
+    rmse: 0.002022473339950817
+    smape: 191.4104076373358
+  artifact_path: n/a
+  notes: ''
+  logged_at: '2026-11-10T13:44:28.452454'
