@@ -84,7 +84,6 @@ except Exception as error:
     st.stop()
 
 model_input = frame[feature_columns].dropna()
-model_input = sample_for_chart(model_input, st.session_state.get("max_pts", 5000))
 if model_input.empty:
     st.warning("No complete regime feature rows are available in this date range.")
     st.stop()
@@ -96,9 +95,12 @@ except Exception as error:
     st.exception(error)
     st.stop()
 
-state_frame = frame.loc[model_input.index].copy()
-state_frame["state"] = states.astype(int)
-counts = state_frame["state"].value_counts().sort_index()
+full_state_frame = frame.loc[model_input.index].copy()
+full_state_frame["state"] = states.astype(int)
+counts = full_state_frame["state"].value_counts().sort_index()
+state_frame = sample_for_chart(
+    full_state_frame, st.session_state.get("max_pts", 5000)
+)
 state_columns = st.columns(min(len(counts), 4))
 palette = [ACCENT, BLUE, PURPLE, CORAL]
 for index, (state, count) in enumerate(counts.items()):

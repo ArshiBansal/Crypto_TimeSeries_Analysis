@@ -12,6 +12,7 @@ from src.dashboard import (
     apply_app_style,
     chart_template,
     load_dashboard_data,
+    load_csv,
     sample_for_chart,
 )
 
@@ -43,7 +44,9 @@ if volatility_columns:
         volatility_columns,
         default=volatility_columns[: min(3, len(volatility_columns))],
     )
-    chart_frame = sample_for_chart(frame)
+    chart_frame = sample_for_chart(
+        frame, st.session_state.get("max_pts", 5000)
+    )
     if selected_columns:
         chart = go.Figure()
         colors = [ACCENT, BLUE, "#A69AC8", CORAL]
@@ -71,7 +74,7 @@ else:
 
 garch_path = ROOT / "artifacts" / "models" / "garch_cond_vol.csv"
 if garch_path.exists():
-    garch_frame = pd.read_csv(garch_path)
+    garch_frame = load_csv(str(garch_path))
     required = {"timestamp", "cond_vol"}
     if required.issubset(garch_frame.columns):
         garch_frame["timestamp"] = pd.to_datetime(
@@ -87,10 +90,13 @@ if garch_path.exists():
             garch_frame["timestamp"].between(start, end)
         ]
         if not garch_frame.empty:
+            garch_chart_frame = sample_for_chart(
+                garch_frame, st.session_state.get("max_pts", 5000)
+            )
             garch_chart = go.Figure(
                 go.Scatter(
-                    x=garch_frame["timestamp"],
-                    y=garch_frame["cond_vol"],
+                    x=garch_chart_frame["timestamp"],
+                    y=garch_chart_frame["cond_vol"],
                     name="GARCH conditional volatility",
                     mode="lines",
                     line=dict(color=BLUE, width=1.8),
@@ -126,10 +132,13 @@ price_column = next(
 if price_column:
     close = pd.to_numeric(frame[price_column], errors="coerce")
     drawdown = close / close.cummax() - 1
+    drawdown_frame = sample_for_chart(
+        frame, st.session_state.get("max_pts", 5000)
+    )
     drawdown_chart = go.Figure(
         go.Scatter(
-            x=frame[timestamp_column],
-            y=drawdown * 100,
+            x=drawdown_frame[timestamp_column],
+            y=drawdown.loc[drawdown_frame.index] * 100,
             name="Drawdown",
             mode="lines",
             line=dict(color=CORAL, width=1.8),

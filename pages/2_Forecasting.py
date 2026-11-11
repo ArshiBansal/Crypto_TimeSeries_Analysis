@@ -48,26 +48,12 @@ if not forecast_files:
     )
     st.stop()
 
-target_columns = [column for column in frame.columns if column.startswith("target_")]
-if not target_columns:
-    st.warning("The selected dataset does not contain a `target_*` column.")
+if st.session_state.get("resolution", "Raw") != "Raw":
+    st.warning(
+        "Forecast replay requires raw bars. Set **Aggregate bars** to **Raw** "
+        "in the sidebar; aggregation changes the trained feature and target values."
+    )
     st.stop()
-
-control, context = st.columns([1, 2], gap="large")
-with control:
-    selected_path = st.selectbox(
-        "Model artifact",
-        forecast_files,
-        format_func=lambda path: path.stem.replace("_", " ").title(),
-    )
-    target_column = st.selectbox("Observed target", target_columns)
-    forecast_points = st.slider(
-        "Evaluation points",
-        min_value=100,
-        max_value=10000,
-        value=min(5000, max(100, len(frame))),
-        step=100,
-    )
 
 split_path = ROOT / "processed" / "split_meta.yaml"
 if not split_path.exists():
@@ -79,6 +65,30 @@ if not split_path.exists():
 
 with split_path.open(encoding="utf-8") as file:
     split_metadata = yaml.safe_load(file)
+target_column = split_metadata.get("target_col")
+if not target_column or target_column not in frame.columns:
+    st.error(
+        "The selected dataset does not contain the model's target listed in "
+        "`split_meta.yaml`. Choose the matching feature dataset or rerun notebooks 01–02."
+    )
+    st.stop()
+
+control, context = st.columns([1, 2], gap="large")
+with control:
+    selected_path = st.selectbox(
+        "Model artifact",
+        forecast_files,
+        format_func=lambda path: path.stem.replace("_", " ").title(),
+    )
+    st.caption(f"Observed target: `{target_column}`")
+    forecast_points = st.slider(
+        "Maximum evaluation points",
+        min_value=100,
+        max_value=10000,
+        value=min(5000, max(100, len(frame))),
+        step=100,
+    )
+
 feature_columns = split_metadata.get("feature_cols", [])
 if not feature_columns:
     st.error("No feature columns are listed in `split_meta.yaml`.")
