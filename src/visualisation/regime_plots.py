@@ -63,7 +63,11 @@ def plot_volatility_regimes(
     if changepoints:
         for cp in changepoints[:-1]:
             if cp < len(df):
-                fig.add_vline(x=df[ts_col].iloc[cp], line_color="#EF5350",
-                              line_dash="dot", annotation_text="CP")
+                cp_ts = df[ts_col].iloc[cp]
+                fig.add_vline(x=cp_ts, line_color="#EF5350", line_dash="dot")
+                fig.add_annotation(
+                    x=cp_ts, y=1, yref="paper", text="CP",
+                    showarrow=False, yshift=8,
+                )
     fig.update_layout(title=title, template="plotly_dark")
     return fig

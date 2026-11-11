@@ -26,7 +26,10 @@ def log_run(
     notes: str = "",
 ) -> str:
     """
-    Append an experiment run entry to configs/experiments.yaml.
+    Record an experiment run in configs/experiments.yaml.
+
+    Repeated logging of the same model, target, split, metrics, and artifact
+    is idempotent; changed metrics remain a separate run.
 
     Parameters
     ----------
@@ -46,7 +49,8 @@ def log_run(
     -------
     str : run_id
     """
-    run_id = f"run_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+    logged_at = datetime.datetime.now(datetime.timezone.utc)
+    run_id = f"run_{logged_at.strftime('%Y%m%d_%H%M%S_%f')}"
 
     entry = {
         "run_id": run_id,
@@ -58,7 +62,7 @@ def log_run(
         "metrics": metrics,
         "artifact_path": artifact_path,
         "notes": notes,
-        "logged_at": datetime.datetime.utcnow().isoformat(),
+        "logged_at": logged_at.isoformat(),
     }
 
     exp_path = Path(EXPERIMENTS_FILE)
@@ -71,7 +75,27 @@ def log_run(
     else:
         data = {"runs": []}
 
-    data["runs"].append(entry)
+    if not isinstance(data, dict):
+        raise ValueError(f"Experiment log must contain a YAML mapping: {exp_path}")
+    runs = data.setdefault("runs", [])
+    if not isinstance(runs, list):
+        raise ValueError(f"Experiment log 'runs' must be a YAML list: {exp_path}")
+
+    identity_fields = (
+        "model", "target", "train_end", "val_end", "test_end",
+        "metrics", "artifact_path", "notes",
+    )
+    existing = next(
+        (run for run in runs
+         if isinstance(run, dict)
+         and all(run.get(field) == entry[field] for field in identity_fields)),
+        None,
+    )
+    if existing is not None:
+        print(f"  Run already logged → {existing['run_id']}")
+        return existing["run_id"]
+
+    runs.append(entry)
 
     with open(exp_path, "w") as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
