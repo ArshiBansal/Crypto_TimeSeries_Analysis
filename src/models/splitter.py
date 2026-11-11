@@ -59,12 +59,23 @@ def chronological_split(
         print(f"  Test  : {test[ts_col].min()} → {test[ts_col].max()}  ({len(test):,} rows)")
         return train, val, test
 
-    # Spark path: get boundary timestamps
+    # Keep boundary selection in Spark SQL; converting to an RDD starts Python
+    # workers and collecting every timestamp would also needlessly use driver memory.
     from pyspark.sql import functions as F
-    ts_vals = df.select(ts_col).orderBy(ts_col).rdd.map(lambda r: r[0]).collect()
-    n = len(ts_vals)
-    train_end_ts = ts_vals[int(n * train_ratio) - 1]
-    val_end_ts   = ts_vals[int(n * (train_ratio + val_ratio)) - 1]
+    n = df.count()
+    if n == 0:
+        raise ValueError("Cannot split an empty Spark DataFrame.")
+
+    train_end_idx = int(n * train_ratio)
+    val_end_idx = int(n * (train_ratio + val_ratio))
+    if train_end_idx < 1 or val_end_idx <= train_end_idx or val_end_idx >= n:
+        raise ValueError(
+            "The Spark DataFrame is too small for the configured split ratios."
+        )
+
+    ordered_ts = df.select(ts_col).orderBy(ts_col)
+    train_end_ts = ordered_ts.limit(train_end_idx).agg(F.max(ts_col)).first()[0]
+    val_end_ts = ordered_ts.limit(val_end_idx).agg(F.max(ts_col)).first()[0]
 
     train = df.filter(F.col(ts_col) <= train_end_ts)
     val   = df.filter((F.col(ts_col) > train_end_ts) & (F.col(ts_col) <= val_end_ts))
