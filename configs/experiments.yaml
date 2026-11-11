@@ -51,3 +51,55 @@ runs:
   artifact_path: n/a
   notes: ''
   logged_at: '2026-11-10T13:44:28.452454'
+- run_id: run_20261111_135817_178314
+  model: Naive
+  target: target_log_return_1
+  train_end: '2019-07-19'
+  val_end: '2019-12-16'
+  test_end: '2020-05-14'
+  metrics:
+    mae: 0.001041400411554967
+    rmse: 0.0028487400686007854
+    smape: 148.26420611651997
+  artifact_path: n/a
+  notes: ''
+  logged_at: '2026-11-11T13:58:17.178314+00:00'
+- run_id: run_20261111_135817_232034
+  model: ARIMA(1,0,1)
+  target: target_log_return_1
+  train_end: '2019-07-19'
+  val_end: '2019-12-16'
+  test_end: '2020-05-14'
+  metrics:
+    mae: 0.0007037274320757253
+    rmse: 0.00202086499441617
+    smape: 197.2686983472246
+  artifact_path: n/a
+  notes: ''
+  logged_at: '2026-11-11T13:58:17.232034+00:00'
+- run_id: run_20261111_135817_268652
+  model: LightGBM
+  target: target_log_return_1
+  train_end: '2019-07-19'
+  val_end: '2019-12-16'
+  test_end: '2020-05-14'
+  metrics:
+    mae: 0.0007046891478423825
+    rmse: 0.0020253033631394547
+    smape: 192.9063848308476
+  artifact_path: C:\Users\hp\Documents\GitHub\Crypto_TimeSeries_Analysis\artifacts\models\lgbm_return.pkl
+  notes: ''
+  logged_at: '2026-11-11T13:58:17.268652+00:00'
+- run_id: run_20261111_135817_311004
+  model: CatBoost
+  target: target_log_return_1
+  train_end: '2019-07-19'
+  val_end: '2019-12-16'
+  test_end: '2020-05-14'
+  metrics:
+    mae: 0.0007042260035639094
+    rmse: 0.002020880176213427
+    smape: 188.48777229368477
+  artifact_path: C:\Users\hp\Documents\GitHub\Crypto_TimeSeries_Analysis\artifacts\models\catboost_return.pkl
+  notes: ''
+  logged_at: '2026-11-11T13:58:17.311004+00:00'
