@@ -13,6 +13,7 @@ from src.dashboard import (
     apply_app_style,
     chart_template,
     load_dashboard_data,
+    load_csv,
     sample_for_chart,
 )
 
@@ -42,7 +43,7 @@ if not change_points_path.exists():
     st.stop()
 
 try:
-    change_points = pd.read_csv(change_points_path)
+    change_points = load_csv(str(change_points_path))
 except pd.errors.EmptyDataError:
     st.warning("The change-point export is empty. Run the CUSUM section in notebook 03.")
     st.stop()

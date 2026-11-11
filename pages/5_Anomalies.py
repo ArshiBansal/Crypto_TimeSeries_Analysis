@@ -12,6 +12,8 @@ from src.dashboard import (
     apply_app_style,
     chart_template,
     load_dashboard_data,
+    load_csv,
+    sample_for_chart,
 )
 
 
@@ -36,7 +38,7 @@ if not scores_path.exists():
     st.info("No anomaly score export is available. Run notebook 03 to generate it.")
     st.stop()
 
-scores = pd.read_csv(scores_path)
+scores = load_csv(str(scores_path))
 required = {timestamp_column, "score"}
 if not required.issubset(scores.columns):
     st.error(
@@ -68,6 +70,12 @@ quantile = st.slider(
 threshold = float(scores["score"].quantile(quantile / 100))
 scores["flagged"] = scores["score"] <= threshold
 flagged = scores[scores["flagged"]]
+chart_scores = sample_for_chart(
+    scores, st.session_state.get("max_pts", 5000)
+)
+chart_flagged = sample_for_chart(
+    flagged, st.session_state.get("max_pts", 5000)
+)
 
 summary = st.columns(4)
 summary[0].metric("Scored bars", f"{len(scores):,}")
@@ -78,9 +86,9 @@ summary[3].metric("Score threshold", f"{threshold:.4g}")
 score_chart = go.Figure()
 score_chart.add_trace(
     go.Scattergl(
-        x=scores[timestamp_column],
-        y=scores["score"],
-        name="Score",
+        x=chart_scores[timestamp_column],
+        y=chart_scores["score"],
+        name="Score (sampled)",
         mode="lines",
         line=dict(color=BLUE, width=1),
         opacity=0.8,
@@ -88,9 +96,9 @@ score_chart.add_trace(
 )
 score_chart.add_trace(
     go.Scatter(
-        x=flagged[timestamp_column],
-        y=flagged["score"],
-        name="Flagged observations",
+        x=chart_flagged[timestamp_column],
+        y=chart_flagged["score"],
+        name="Flagged observations (sampled)",
         mode="markers",
         marker=dict(color=CORAL, size=7, symbol="x"),
     )
