@@ -12,6 +12,7 @@ and rows without a valid future label are dropped before model export.
 """
 from __future__ import annotations
 
+import math
 from pathlib import Path as _Path
 _PROJECT_ROOT   = _Path(__file__).resolve().parent.parent.parent
 _DEFAULT_CONFIG = str(_PROJECT_ROOT / "configs" / "pipeline.yaml")
@@ -33,6 +34,7 @@ def build_feature_pipeline(
     config_path: str = _DEFAULT_CONFIG,
     ts_col: str = "timestamp",
     close_col: str = "close",
+    ann_factor: float = math.sqrt(365),
 ) -> DataFrame:
     """
     Run the full feature-engineering pipeline on a cleaned Spark DataFrame.
@@ -55,6 +57,8 @@ def build_feature_pipeline(
         Path to pipeline.yaml (reads rolling_windows, lags, target_horizon).
     ts_col : str
     close_col : str
+    ann_factor : float
+        Multiplier for annualising per-bar volatility.
 
     Returns
     -------
@@ -66,6 +70,10 @@ def build_feature_pipeline(
     rolling_windows: list[int] = cfg.get("rolling_windows", [7, 14, 30, 60])
     return_lags: list[int] = cfg.get("return_lags", [1, 2, 3, 5, 10])
     target_horizon: int = cfg.get("target_horizon", 1)
+    if target_horizon < 1:
+        raise ValueError("features.target_horizon must be at least 1.")
+    if not math.isfinite(ann_factor) or ann_factor <= 0:
+        raise ValueError("ann_factor must be a finite positive number.")
     has_ohlc = all(c in df.columns for c in ["open", "high", "low", "close"])
 
     # Step 0 – Cast any string-typed numeric columns to DoubleType.
@@ -74,6 +82,7 @@ def build_feature_pipeline(
     # all numeric-looking columns to double before any arithmetic.
     _NUMERIC_COLS = [
         "open", "high", "low", "close", "volume",
+        "number_of_trades", "taker_buy_base_asset_volume",
         "MA_20", "MA_50", "MA_200", "RSI", "%K", "%D", "ADX", "ATR",
         "Trendline", "MACD", "BL_Upper", "BL_Lower", "Signal", "Histogram",
         "MN_Upper", "MN_Lower", "month",
@@ -93,6 +102,7 @@ def build_feature_pipeline(
     # Step 2 – Volatility
     df = add_volatility_features(
         df, ts_col=ts_col, rolling_windows=rolling_windows, has_ohlc=has_ohlc,
+        ann_factor=ann_factor,
     )
 
     # Step 3 – Volume
