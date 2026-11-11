@@ -1,5 +1,6 @@
 """BTC / FIELDNOTES — an interactive historical-market observatory."""
 
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -76,7 +77,7 @@ if price_column is None:
 
 prices = pd.to_numeric(frame[price_column], errors="coerce")
 valid_prices = prices.dropna()
-returns = prices.pct_change().replace([float("inf"), float("-inf")], pd.NA)
+returns = prices.pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan)
 valid_returns = returns.dropna()
 first_price = float(valid_prices.iloc[0]) if not valid_prices.empty else float("nan")
 latest_price = float(valid_prices.iloc[-1]) if not valid_prices.empty else float("nan")
@@ -265,12 +266,15 @@ with overview_tab:
     lower_left, lower_right = st.columns([1.1, 0.9], gap="large")
     with lower_left:
         st.markdown("#### Return texture")
-        return_values = valid_returns * 100
+        return_values = valid_returns.to_numpy(dtype=float) * 100
+        return_values = return_values[np.isfinite(return_values)]
+        return_counts, return_edges = np.histogram(return_values, bins=65)
+        return_centers = (return_edges[:-1] + return_edges[1:]) / 2
         return_chart = go.Figure()
         return_chart.add_trace(
-            go.Histogram(
-                x=return_values,
-                nbinsx=65,
+            go.Bar(
+                x=return_centers,
+                y=return_counts,
                 name="Bar returns",
                 marker_color=BLUE,
                 opacity=0.82,
@@ -307,10 +311,11 @@ with overview_tab:
             volatility_label = "30-bar realized volatility"
 
         risk_chart = go.Figure()
+        risk_frame = sample_for_chart(frame, max_points)
         risk_chart.add_trace(
             go.Scatter(
-                x=frame[timestamp_column],
-                y=vol_values,
+                x=risk_frame[timestamp_column],
+                y=vol_values.loc[risk_frame.index],
                 name=volatility_label,
                 mode="lines",
                 line=dict(color=PURPLE, width=2),
