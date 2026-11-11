@@ -66,20 +66,22 @@ flowchart LR
 
 ## Dashboard
 
-The root-level Streamlit app provides shared dataset, date-range, and bar-resolution filters, a light/dark theme toggle, and an interactive market overview. Each analysis page uses the same selected data window. Streamlit discovers the pages from the root `pages/` directory.
+The root-level Streamlit app provides shared dataset, date-range, and bar-resolution filters, a chart-detail control, and a light/dark theme toggle. Each analysis page uses the selected dataset and date window. Streamlit discovers the pages from the root `pages/` directory. Aggregation is useful for visual exploration, but it changes feature and target values; forecasting replay is therefore available only with **Raw** bars.
 
 | Page | What it provides |
 |:--|:--|
-| **Home** | Price/volume charts, market-window metrics, return texture, rolling risk, and monthly returns |
+| **Home** | Price/volume charts, market-window metrics, return texture, rolling risk, and monthly returns; volatility is bar-based and not annualized |
 | **Data Lab** | Search and filter features; inspect timelines, distributions, normalized comparisons, correlations, and data quality; preview or export the filtered data |
-| **Forecasting** | Replay a saved LightGBM or CatBoost model against an observed target |
+| **Forecasting** | Replay a saved LightGBM or CatBoost model against the configured target on raw bars; this is historical replay, not a forward forecast or holdout evaluation |
 | **Volatility** | Explore rolling volatility, exported GARCH estimates, and window drawdown |
-| **Regimes** | Inspect saved GMM/HMM states and transition probabilities |
-| **Anomalies** | Explore exported Isolation Forest scores and adjust the flagged-score percentile |
+| **Regimes** | Apply saved GMM/HMM models to the selected feature history and inspect inferred states and HMM transition probabilities |
+| **Anomalies** | Explore exported Isolation Forest scores and adjust the flagged-score percentile for the selected window |
 | **Change Points** | View exported CUSUM timestamps alongside price and volatility |
 
 > [!NOTE]
 > **Data and artifacts are not bundled.** The dashboard reads local prepared Parquet files from `processed/` and optional model/score exports from `artifacts/`. These generated files are git-ignored and are not downloaded automatically. Provide the Parquet files and any desired artifacts separately when deploying. Pages that need an absent model or export explain which notebook output to generate.
+
+The shared chart-detail control caps plotted samples for responsiveness; summary metrics, filters, and data exports use the full selected rows. The Data Lab CSV export is prepared only when requested. Forecasting requires the raw feature dataset and matching `processed/split_meta.yaml`; exported model artifacts must be trusted because loading joblib/pickle files can execute code.
 
 ## Research pipeline
 
@@ -154,7 +156,7 @@ python -m pip install -r requirements-research.txt
 jupyter notebook notebooks/
 ```
 
-Run the notebooks in order: **01 → 02 → 03 → 04**. Dataset access requires an internet connection. The Spark-backed pipeline requires a compatible Java runtime; configure the local Java path in [`configs/pipeline.yaml`](configs/pipeline.yaml) for your machine before running it. Deep-learning notebook sections are optional and marked as stubs.
+Run the notebooks in order: **01 → 02 → 03 → 04**. Dataset access requires an internet connection. The Spark-backed pipeline requires a compatible Java runtime; configure the local Java path in [`configs/pipeline.yaml`](configs/pipeline.yaml) for your machine before running it. The standard notebook run focuses on the core statistical, tree-model, regime, and anomaly workflows; optional deep-learning wrappers remain separate. Install their larger dependencies only when needed with `python -m pip install -r requirements-deep-learning.txt`.
 
 ### 3 · Launch the dashboard
 
@@ -186,11 +188,11 @@ The notebook pipeline is configured to read these sources; the dashboard itself 
 | Interactive visualization | Streamlit · Plotly |
 | Experiment tracking | MLflow |
 
-TCN and PatchTST wrappers exist in the research code, but notebook deep-learning training is optional/stubbed. Their presence in the research dependency set does not mean they are trained or available in the dashboard.
+TCN and PatchTST wrappers exist in the research code, but notebook deep-learning training is optional/stubbed. Their dependencies are isolated in [`requirements-deep-learning.txt`](requirements-deep-learning.txt); these models are not trained or available in the dashboard.
 
 ## Evaluation & experiment design
 
-Forecasting experiments use a **chronological split** rather than random shuffling, keeping later observations out of the training period. The default configuration uses a one-bar-ahead log-return target and a 70 / 15 / 15 train–validation–test split.
+Forecasting experiments use a **chronological split** rather than random shuffling, keeping later observations out of the training period. Trailing rows are purged from train and validation so forward target labels do not cross partition boundaries. Annualized volatility uses the observed bar interval from the data audit. The default configuration uses a one-bar-ahead log-return target and a 70 / 15 / 15 train–validation–test split.
 
 | Experiment choice | Project default |
 |:--|:--|
