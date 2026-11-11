@@ -25,6 +25,12 @@ def load_parquet(path: str) -> pd.DataFrame:
     return pd.read_parquet(path)
 
 
+@st.cache_data(show_spinner="Reading exported market data…")
+def load_csv(path: str) -> pd.DataFrame:
+    """Load an exported CSV once and cache it for the current app process."""
+    return pd.read_csv(path)
+
+
 def detect_timestamp_column(frame: pd.DataFrame) -> str | None:
     for candidate in ("timestamp", "datetime", "date", "time"):
         if candidate in frame.columns:
