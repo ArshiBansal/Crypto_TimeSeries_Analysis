@@ -6,9 +6,6 @@
 pyspark>=3.5.0
 datasets>=2.19.0
 huggingface_hub>=0.22.0
-torch>=2.2.0
-pytorch-forecasting>=1.0.0
-darts>=0.29.0
 statsmodels>=0.14.0
 arch>=6.3.0
 ruptures>=1.1.9

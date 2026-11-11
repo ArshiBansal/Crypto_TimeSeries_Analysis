@@ -1,0 +1,8 @@
+# Optional dependencies for the TCN and PatchTST research wrappers.
+# Install the core research environment first:
+#   pip install -r requirements-research.txt
+-r requirements-research.txt
+
+torch>=2.2.0
+pytorch-forecasting>=1.0.0
+darts>=0.29.0
