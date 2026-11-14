@@ -87,22 +87,23 @@ def add_volatility_features(
             )
 
             # Garman-Klass proxy
-            # Guard: open > 0 and low > 0 required
+            # σ²_GK = (1/(4·ln2))·mean([ln(H/L)]²) + (2·ln2 − 1)·mean([ln(C/O)]²)
+            # Guard: open > 0, low > 0, high > 0 required
             safe_hl_sq = F.when(
                 (F.col("low") > 0) & (F.col("high") > 0),
-                0.5 * F.pow(F.log(F.col("high") / F.col("low")), 2),
+                (1.0 / (4.0 * ln2)) * F.pow(F.log(F.col("high") / F.col("low")), 2),
             ).otherwise(F.lit(None).cast("double"))
 
             safe_co_sq = F.when(
                 (F.col("open") > 0) & (F.col("close") > 0),
-                (2 * ln2 - 1) * F.pow(F.log(F.col("close") / F.col("open")), 2),
+                (2.0 * ln2 - 1.0) * F.pow(F.log(F.col("close") / F.col("open")), 2),
             ).otherwise(F.lit(None).cast("double"))
 
             df = df.withColumn("_gk_term1", safe_hl_sq)
             df = df.withColumn("_gk_term2", safe_co_sq)
             df = df.withColumn(
                 f"garman_klass_vol_{win}",
-                F.sqrt(F.avg(F.col("_gk_term1") - F.col("_gk_term2")).over(rw)),
+                F.sqrt(F.avg(F.col("_gk_term1") + F.col("_gk_term2")).over(rw)),
             )
 
     # Drop helper columns

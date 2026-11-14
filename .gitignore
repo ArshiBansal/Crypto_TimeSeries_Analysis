@@ -36,8 +36,14 @@ derby.log
 metastore_db/
 spark-warehouse/
 *.log
+hs_err_pid*
+replay_pid*
 # CatBoost training history is reproducible and not needed by the app.
 catboost_info/
+
+# ── Notebook scratch / duplicate outputs ─────────────────────────────
+notebooks/artifacts/
+notebooks/models/
 
 # ── Local caches (including repository-local Hugging Face caches) ──────
 .cache/
