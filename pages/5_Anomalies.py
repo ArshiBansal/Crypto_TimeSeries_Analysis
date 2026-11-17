@@ -116,3 +116,32 @@ if not flagged.empty:
 
 st.download_button("Download flagged observations", data=flagged.to_csv(index=False).encode("utf-8"), file_name="btc_flagged_observations.csv", mime="text/csv")
 st.caption("Anomaly flags indicate statistical unusualness under one fitted model; they are not evidence of an error or a future event. Review sensitivity across thresholds.")
+
+
+mp_path = ROOT / "artifacts" / "models" / "matrix_profile.csv"
+mp_meta = ROOT / "artifacts" / "models" / "matrix_profile_meta.json"
+if mp_path.exists():
+    st.markdown("#### Matrix profile (motif/discord, exploratory)")
+    try:
+        mp = load_csv(str(mp_path))
+        ts_c = next((c for c in [score_timestamp_column, timestamp_column, "timestamp", "datetime", "date", "time"] if c in mp.columns), None)
+        val_c = next((c for c in ["matrix_profile", "mp", "value"] if c in mp.columns), None)
+        if ts_c and val_c:
+            mp[ts_c] = pd.to_datetime(mp[ts_c], errors="coerce", utc=True)
+            mp[val_c] = pd.to_numeric(mp[val_c], errors="coerce")
+            mp = mp.dropna(subset=[ts_c, val_c])
+            mp = mp[mp[ts_c].between(start, end)]
+            if not mp.empty:
+                mps = sample_for_chart(mp, st.session_state.get("max_pts", 5000))
+                fig = go.Figure(go.Scatter(x=mps[ts_c], y=mps[val_c], mode="lines", name="Matrix profile", line=dict(color=ACCENT, width=1.2)))
+                if mp_meta.exists():
+                    meta = json.loads(mp_meta.read_text(encoding="utf-8"))
+                    disc_ts = pd.to_datetime(meta.get("discord_timestamp"), errors="coerce", utc=True)
+                    if pd.notna(disc_ts):
+                        fig.add_vline(x=disc_ts, line_dash="dot", line_color=CORAL)
+                        st.caption(f"Discord: {meta.get('discord_timestamp')} (value={meta.get('discord_value')}) window={meta.get('window')}")
+                fig.update_layout(template=chart_template(), height=260, margin=dict(l=12,r=12,t=20,b=12), yaxis_title="Matrix profile")
+                fig.update_xaxes(showgrid=False)
+                st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    except Exception:
+        st.info("Matrix profile export found but could not be rendered.")

@@ -162,3 +162,12 @@ else:
 
 st.caption(f"Model: {choice.stem.upper()} · Input features: {len(feature_columns)} · Predicted sample: {len(full_state_frame):,} bars. "
            "Use BIC/log-likelihood, stability, and interpretability to judge regime quality; do not treat labels as ground truth.")
+
+
+diag_path = ROOT / "reports" / "metrics" / "regime_diagnostics.json"
+if diag_path.exists():
+    try:
+        st.markdown("#### Exported regime diagnostics")
+        st.json(json.loads(diag_path.read_text(encoding="utf-8")))
+    except Exception:
+        pass

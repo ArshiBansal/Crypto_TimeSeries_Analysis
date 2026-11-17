@@ -224,6 +224,32 @@ if importance is not None and len(importance) == len(feature_columns):
     st.markdown("#### What the model used")
     st.plotly_chart(importance_chart, use_container_width=True, config={"displaylogo": False})
 
+
+wf_path = ROOT / "reports" / "metrics" / "walk_forward_summary.json"
+test_pred_path = ROOT / "artifacts" / "models" / f"{'lgbm' if 'lgbm' in selected_path.stem.lower() else 'catboost'}_test_predictions.csv"
+if wf_path.exists() or test_pred_path.exists():
+    st.markdown("#### Exported evaluation artifacts")
+    c1, c2 = st.columns(2)
+    if wf_path.exists():
+        try:
+            wf = json.loads(wf_path.read_text(encoding="utf-8"))
+            with c1:
+                st.caption("Walk-forward summary (reports/metrics/walk_forward_summary.json)")
+                st.json({k: wf.get(k) for k in ["initial_train_size","test_size","step_size","expanding","ridge","naive_proxy"] if k in wf})
+        except Exception:
+            pass
+    if test_pred_path.exists():
+        try:
+            tp = pd.read_csv(test_pred_path)
+            with c2:
+                st.caption(f"Exported test predictions: {test_pred_path.name}")
+                if {"actual","predicted"}.issubset(tp.columns):
+                    tm = forecast_metrics(pd.to_numeric(tp["actual"], errors="coerce").to_numpy(),
+                                          pd.to_numeric(tp["predicted"], errors="coerce").to_numpy())
+                    st.write({k: tm.get(k) for k in ["mae","rmse","directional_accuracy","correlation","mase","naive_scaled_mae"]})
+        except Exception:
+            pass
+
 st.caption(
     "Direction accuracy, correlation/IC, MASE, and naive-scaled MAE are better decision signals than sMAPE "
     "for near-zero return targets. Use chronological/walk-forward holdout evaluation for model selection."
