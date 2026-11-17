@@ -1,8 +1,3 @@
-# ── IDE ──────────────────────────────────────────────────────────────
-.vscode/
-.idea/
-*.code-workspace
-
 # ── Python ───────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
@@ -38,19 +33,18 @@ spark-warehouse/
 *.log
 hs_err_pid*
 replay_pid*
-# CatBoost training history is reproducible and not needed by the app.
 catboost_info/
 
 # ── Notebook scratch / duplicate outputs ─────────────────────────────
 notebooks/artifacts/
 notebooks/models/
 
-# ── Local caches (including repository-local Hugging Face caches) ──────
+# ── Local caches (including repository-local Hugging Face caches) ────
 .cache/
 *.arrow
 *.parquet.tmp
 
-# ── Processed data & artifacts (large files – tracked via DVC if needed) ──
+# ── Processed data & artifacts (large files) ─────────────────────────
 processed/
 artifacts/
 reports/figures/
@@ -74,21 +68,15 @@ desktop.ini
 htmlcov/
 
 # ── Streamlit ────────────────────────────────────────────────────────
-# Keep .streamlit/config.toml (theme/server settings — safe to commit)
-# Ignore secrets file which may contain API keys
 .streamlit/secrets.toml
-
-# ── Streamlit Cloud deployment cache ─────────────────────────────────
 .streamlit/*.log
 
-# ── DVC (data version control – optional) ────────────────────────────
+# ── DVC (data version control - optional) ────────────────────────────
 .dvc/tmp/
 .dvc/cache/
 /tmp/
 
 # ── Notebook output / scratch ────────────────────────────────────────
-# Notebook source is committed; large cell outputs are cleared before push
-# (use `jupyter nbconvert --clear-output` or nbstripout pre-commit hook)
 *.nbconvert.py
 
 # ── Windows-specific ─────────────────────────────────────────────────
