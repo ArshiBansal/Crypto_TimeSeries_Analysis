@@ -103,3 +103,88 @@ runs:
   artifact_path: C:\Users\hp\Documents\GitHub\Crypto_TimeSeries_Analysis\artifacts\models\catboost_return.pkl
   notes: ''
   logged_at: '2026-11-11T13:58:17.311004+00:00'
+- run_id: run_20261117_181111_254376
+  model: Naive
+  target: target_log_return_1
+  train_end: '2019-07-19'
+  val_end: '2019-12-16'
+  test_end: '2020-05-14'
+  metrics:
+    mae: 0.001041400411554967
+    rmse: 0.0028487400686007854
+    smape: 148.26420611651997
+    directional_accuracy: 0.483832024078002
+    correlation: 0.00642329403054549
+    mase: 0.8335382965759149
+    naive_scaled_mae: 1.0
+  artifact_path: n/a
+  notes: walk-forward/diagnostic workflow; sMAPE diagnostic only for near-zero returns
+  logged_at: '2026-11-17T18:11:11.254376+00:00'
+- run_id: run_20261117_181111_327052
+  model: ARIMA(1,0,1)
+  target: target_log_return_1
+  train_end: '2019-07-19'
+  val_end: '2019-12-16'
+  test_end: '2020-05-14'
+  metrics:
+    mae: 0.0007037274320757253
+    rmse: 0.00202086499441617
+    smape: 197.2686983472246
+    directional_accuracy: 0.49889661628995585
+    correlation: 3.4479327563369387e-18
+    mase: 0.5632643875282183
+    naive_scaled_mae: 0.6757497690518225
+  artifact_path: n/a
+  notes: walk-forward/diagnostic workflow; sMAPE diagnostic only for near-zero returns
+  logged_at: '2026-11-17T18:11:11.327052+00:00'
+- run_id: run_20261117_181111_386980
+  model: Ridge
+  target: target_log_return_1
+  train_end: '2019-07-19'
+  val_end: '2019-12-16'
+  test_end: '2020-05-14'
+  metrics:
+    mae: 0.0007044786325778194
+    rmse: 0.0020352557598108814
+    smape: 171.2583588124778
+    directional_accuracy: 0.5184315233382373
+    correlation: -0.009458081599068477
+    mase: 0.5638656494251361
+    naive_scaled_mae: 0.6764709973186603
+  artifact_path: n/a
+  notes: walk-forward/diagnostic workflow; sMAPE diagnostic only for near-zero returns
+  logged_at: '2026-11-17T18:11:11.386980+00:00'
+- run_id: run_20261117_181111_459592
+  model: LightGBM
+  target: target_log_return_1
+  train_end: '2019-07-19'
+  val_end: '2019-12-16'
+  test_end: '2020-05-14'
+  metrics:
+    mae: 0.0007044333880659885
+    rmse: 0.0020246238137841886
+    smape: 193.1318701035041
+    directional_accuracy: 0.49847866791493917
+    correlation: 0.005927658109281258
+    mase: 0.563829435656731
+    naive_scaled_mae: 0.6764276160425601
+  artifact_path: C:\Users\hp\Documents\GitHub\Crypto_TimeSeries_Analysis\artifacts\models\lgbm_return.pkl
+  notes: walk-forward/diagnostic workflow; sMAPE diagnostic only for near-zero returns
+  logged_at: '2026-11-17T18:11:11.459592+00:00'
+- run_id: run_20261117_181111_528237
+  model: CatBoost
+  target: target_log_return_1
+  train_end: '2019-07-19'
+  val_end: '2019-12-16'
+  test_end: '2020-05-14'
+  metrics:
+    mae: 0.0007039368616273272
+    rmse: 0.002021418955522137
+    smape: 191.68141743952006
+    directional_accuracy: 0.4956951317373278
+    correlation: 0.010160083165366865
+    mase: 0.5634320152243071
+    naive_scaled_mae: 0.675950794724183
+  artifact_path: C:\Users\hp\Documents\GitHub\Crypto_TimeSeries_Analysis\artifacts\models\catboost_return.pkl
+  notes: walk-forward/diagnostic workflow; sMAPE diagnostic only for near-zero returns
+  logged_at: '2026-11-17T18:11:11.528237+00:00'
