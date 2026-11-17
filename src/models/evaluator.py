@@ -40,7 +40,9 @@ def forecast_metrics(
     mae  = float(np.mean(np.abs(y_true - y_pred)))
     rmse = float(np.sqrt(np.mean((y_true - y_pred) ** 2)))
     denom = (np.abs(y_true) + np.abs(y_pred)) / 2
-    smape = float(np.mean(np.where(denom == 0, 0, np.abs(y_true - y_pred) / denom)) * 100)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        smape_val = np.where(denom == 0, 0, np.abs(y_true - y_pred) / denom)
+    smape = float(np.mean(smape_val) * 100)
 
     result = {"mae": mae, "rmse": rmse, "smape": smape}
     if label:

@@ -53,18 +53,18 @@ except pd.errors.ParserError as error:
     st.stop()
 
 required_columns = {timestamp_column}
-    if not required_columns.issubset(change_points.columns):
-        st.error(
-            f"The change-point export must contain a `{timestamp_column}` column."
-        )
-        st.stop()
+if not required_columns.issubset(change_points.columns):
+    st.error(
+        f"The change-point export must contain a `{timestamp_column}` column."
+    )
+    st.stop()
 
-    change_points[timestamp_column] = pd.to_datetime(
-        change_points[timestamp_column], errors="coerce", utc=True
-    )
-    change_points = change_points.dropna(subset=[timestamp_column]).drop_duplicates(
-        subset=[timestamp_column]
-    )
+change_points[timestamp_column] = pd.to_datetime(
+    change_points[timestamp_column], errors="coerce", utc=True
+)
+change_points = change_points.dropna(subset=[timestamp_column]).drop_duplicates(
+    subset=[timestamp_column]
+)
 start = frame[timestamp_column].min()
 end = frame[timestamp_column].max()
 visible_points = change_points[
@@ -175,16 +175,16 @@ st.plotly_chart(
 )
 
 st.markdown("#### Breakpoint dates")
-    display_columns = [timestamp_column]
-    if "index" in visible_points.columns:
-        display_columns.append("index")
-    st.dataframe(
-        visible_points[display_columns].assign(
-            **{timestamp_column: visible_points[timestamp_column].dt.strftime("%Y-%m-%d %H:%M UTC")}
-        ),
-        use_container_width=True,
-        hide_index=True,
-    )
+display_columns = [timestamp_column]
+if "index" in visible_points.columns:
+    display_columns.append("index")
+st.dataframe(
+    visible_points[display_columns].assign(
+        **{timestamp_column: visible_points[timestamp_column].dt.strftime("%Y-%m-%d %H:%M UTC")}
+    ),
+    use_container_width=True,
+    hide_index=True,
+)
 st.download_button(
     "Download visible breakpoints",
     data=visible_points.to_csv(index=False).encode("utf-8"),
