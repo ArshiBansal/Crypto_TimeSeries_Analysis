@@ -21,6 +21,9 @@ st.set_page_config(page_title="Risk & Volatility", page_icon="∿", layout="wide
 frame, timestamp_column = load_dashboard_data()
 apply_app_style()
 
+if frame is None:
+    st.stop()
+
 st.markdown(
     """
     <div class="hero">

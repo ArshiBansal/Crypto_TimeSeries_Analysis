@@ -24,9 +24,6 @@ import pandas as pd
 from pathlib import Path
 from sklearn.ensemble import IsolationForest
 
-import stumpy
-import ruptures as rpt
-
 
 # ── Isolation Forest ──────────────────────────────────────────────────────────
 
@@ -96,6 +93,13 @@ def compute_matrix_profile(
     -------
     dict with 'mp' (matrix profile values), 'mp_index', 'discord_idx'
     """
+    try:
+        import stumpy
+    except ImportError as exc:
+        raise ImportError(
+            "stumpy is required for compute_matrix_profile. Install requirements-research.txt."
+        ) from exc
+
     mp = stumpy.stump(series.astype(np.float64), m=window)
     mp_values  = mp[:, 0].astype(float)
     mp_indices = mp[:, 1].astype(int)
@@ -152,6 +156,13 @@ def detect_changepoints_cusum(
     if original_length > max_samples:
         step = math.ceil(original_length / max_samples)
         series = series[::step]
+
+    try:
+        import ruptures as rpt
+    except ImportError as exc:
+        raise ImportError(
+            "ruptures is required for detect_changepoints_cusum. Install requirements-research.txt."
+        ) from exc
 
     algo = rpt.Pelt(model=model).fit(series)
     breakpoints = algo.predict(pen=10)   # pen controls sensitivity

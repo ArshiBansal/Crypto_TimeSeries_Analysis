@@ -23,6 +23,9 @@ st.set_page_config(page_title="Market Regimes", page_icon="◌", layout="wide")
 frame, timestamp_column = load_dashboard_data()
 apply_app_style()
 
+if frame is None:
+    st.stop()
+
 st.markdown(
     """
     <div class="hero">
@@ -107,7 +110,7 @@ for index, (state, count) in enumerate(counts.items()):
     state_columns[index % len(state_columns)].metric(
         f"State {state}",
         f"{count:,} bars",
-        delta=f"{count / len(state_frame) * 100:.1f}% of view",
+        delta=f"{count / len(full_state_frame) * 100:.1f}% of view",
     )
 
 price_column = next(

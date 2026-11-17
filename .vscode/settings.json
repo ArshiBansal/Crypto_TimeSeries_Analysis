@@ -1,6 +1,16 @@
 {
-        "terminal.integrated.env.windows": {
+    "terminal.integrated.env.windows": {
         "SPARK_HOME": null,
         "PYTHONPATH": null
+    },
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": ["tests"],
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "editor.formatOnSave": false,
+    "files.exclude": {
+        "**/.pytest_cache": true,
+        "**/__pycache__": true,
+        "**/*.pyc": true
     }
 }

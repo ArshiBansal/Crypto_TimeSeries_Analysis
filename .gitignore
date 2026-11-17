@@ -79,6 +79,9 @@ htmlcov/
 # ── Notebook output / scratch ────────────────────────────────────────
 *.nbconvert.py
 
+# ── Pre-commit ───────────────────────────────────────────────────────
+*.pre-commit-config.yaml.local
+
 # ── Windows-specific ─────────────────────────────────────────────────
 $RECYCLE.BIN/
 *.lnk

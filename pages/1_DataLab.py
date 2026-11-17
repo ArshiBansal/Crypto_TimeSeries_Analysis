@@ -20,6 +20,9 @@ st.set_page_config(page_title="Data Lab", page_icon="◫", layout="wide")
 frame, timestamp_column = load_dashboard_data()
 apply_app_style()
 
+if frame is None:
+    st.stop()
+
 numeric_columns = frame.select_dtypes(include="number").columns.tolist()
 selected_file = st.session_state.get("_selected_file", "prepared dataset")
 max_points = st.session_state.get("max_pts", 5000)

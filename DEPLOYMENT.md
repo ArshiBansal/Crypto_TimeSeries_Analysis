@@ -22,20 +22,24 @@ models or scores require their corresponding artifacts.
    path** to `Home.py`.
 3. Configure the app's Python version to 3.10 or newer, consistent with the
    project dependencies.
-4. Arrange secure access to the prepared Parquet data and any optional
-   artifacts. Suitable approaches include downloading versioned files from
-   controlled object storage during startup or using an approved persistent
-   data store. Keep large datasets and model files out of Git.
+4. Provision the prepared Parquet data and optional artifacts **before**
+   deploying. The app does not download them automatically. Options:
+   - Run `python scripts/prepare_data.py` locally and commit the generated
+     `processed/` and `artifacts/` directories (review `.gitignore` first —
+     large files should stay out of Git).
+   - Download versioned files from controlled object storage during app
+     startup via a `requirements.txt`-installed helper or a Streamlit
+     `secrets.toml`-referenced URL.
+   - Use a persistent data store approved by your hosting platform.
 5. Add credentials through Streamlit's app secrets or the hosting platform's
    secret manager. Never place secrets in source code or commit
    `.streamlit/secrets.toml`.
 6. Confirm the app can read its data and navigate to each page that depends on
    optional artifacts.
 
-The current app expects files in local `processed/` and `artifacts/models/`
-directories. **It does not automatically download these files from remote
-storage.** Configure and test any provisioning step before relying on a hosted
-deployment.
+The app now degrades gracefully when `processed/` is absent: each page shows
+a friendly "no data" message instead of crashing. To show real analytics,
+provision the Parquet files as described above.
 
 ## Local deployment check
 
@@ -47,6 +51,8 @@ streamlit run Home.py
 For the complete data-generation workflow, install `requirements-research.txt`
 and run the notebooks in order. Spark-backed processing also requires a
 compatible Java installation; see [`configs/pipeline.yaml`](configs/pipeline.yaml).
+Alternatively, run `python scripts/prepare_data.py` to automate the notebook
+sequence.
 
 ## Operational notes
 

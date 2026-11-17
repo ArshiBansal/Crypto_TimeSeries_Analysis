@@ -13,3 +13,7 @@ scikit-learn>=1.4.0
 lightgbm>=4.3.0
 catboost>=1.2.0
 hmmlearn>=0.3.0
+xgboost>=2.1.0
+
+# Testing.
+pytest>=8.0.0

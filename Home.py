@@ -28,6 +28,9 @@ st.set_page_config(
 frame, timestamp_column = load_dashboard_data()
 apply_app_style()
 
+if frame is None:
+    st.stop()
+
 numeric_columns = frame.select_dtypes(include="number").columns.tolist()
 price_candidates = [
     column for column in ("close", "price", "adj_close") if column in frame.columns

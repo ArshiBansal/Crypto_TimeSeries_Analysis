@@ -21,6 +21,9 @@ st.set_page_config(page_title="Anomaly Review", page_icon="⌖", layout="wide")
 frame, timestamp_column = load_dashboard_data()
 apply_app_style()
 
+if frame is None:
+    st.stop()
+
 st.markdown(
     """
     <div class="hero">
@@ -39,22 +42,25 @@ if not scores_path.exists():
     st.stop()
 
 scores = load_csv(str(scores_path))
-required = {timestamp_column, "score"}
-if not required.issubset(scores.columns):
+timestamp_candidates = [timestamp_column, "timestamp", "datetime", "date", "time"]
+score_timestamp_column = next(
+    (column for column in timestamp_candidates if column in scores.columns),
+    None,
+)
+if score_timestamp_column is None or "score" not in scores.columns:
     st.error(
-        "The anomaly score export must contain "
-        f"`{timestamp_column}` and `score` columns."
+        "The anomaly score export must contain a timestamp column and `score`."
     )
     st.stop()
 
-scores[timestamp_column] = pd.to_datetime(
-    scores[timestamp_column], errors="coerce", utc=True
+scores[score_timestamp_column] = pd.to_datetime(
+    scores[score_timestamp_column], errors="coerce", utc=True
 )
 scores["score"] = pd.to_numeric(scores["score"], errors="coerce")
-scores = scores.dropna(subset=[timestamp_column, "score"])
+scores = scores.dropna(subset=[score_timestamp_column, "score"])
 start = frame[timestamp_column].min()
 end = frame[timestamp_column].max()
-scores = scores[scores[timestamp_column].between(start, end)].sort_values(timestamp_column)
+scores = scores[scores[score_timestamp_column].between(start, end)].sort_values(score_timestamp_column)
 if scores.empty:
     st.warning("No anomaly scores overlap the selected date range.")
     st.stop()
@@ -86,7 +92,7 @@ summary[3].metric("Score threshold", f"{threshold:.4g}")
 score_chart = go.Figure()
 score_chart.add_trace(
     go.Scattergl(
-        x=chart_scores[timestamp_column],
+        x=chart_scores[score_timestamp_column],
         y=chart_scores["score"],
         name="Score (sampled)",
         mode="lines",
@@ -96,7 +102,7 @@ score_chart.add_trace(
 )
 score_chart.add_trace(
     go.Scatter(
-        x=chart_flagged[timestamp_column],
+        x=chart_flagged[score_timestamp_column],
         y=chart_flagged["score"],
         name="Flagged observations (sampled)",
         mode="markers",
@@ -174,7 +180,7 @@ with right:
 if not flagged.empty:
     st.markdown("#### Lowest-scoring observations")
     st.dataframe(
-        flagged.nsmallest(100, "score").sort_values(timestamp_column, ascending=False),
+        flagged.nsmallest(100, "score").sort_values(score_timestamp_column, ascending=False),
         use_container_width=True,
         hide_index=True,
     )

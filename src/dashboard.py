@@ -128,7 +128,7 @@ def load_dashboard_data() -> tuple[pd.DataFrame, str]:
             st.info("No prepared Parquet data is available.")
             st.caption("Run notebooks 01 and 02 to create the dashboard datasets.")
             st.warning("Open Home after preparing data to see the workspace overview.")
-            st.stop()
+            return None, "timestamp"
 
         file_names = [path.name for path in parquet_files]
         default_file = next(
@@ -150,12 +150,12 @@ def load_dashboard_data() -> tuple[pd.DataFrame, str]:
         except Exception as error:
             st.error(f"Could not read `{selected_file}`.")
             st.exception(error)
-            st.stop()
+            return None, "timestamp"
 
         timestamp_column = detect_timestamp_column(raw_df)
         if timestamp_column is None:
             st.error(f"`{selected_file}` does not contain a recognizable timestamp.")
-            st.stop()
+            return None, "timestamp"
 
         raw_df[timestamp_column] = pd.to_datetime(
             raw_df[timestamp_column], errors="coerce", utc=True
@@ -168,7 +168,7 @@ def load_dashboard_data() -> tuple[pd.DataFrame, str]:
         )
         if raw_df.empty:
             st.error(f"`{selected_file}` contains no valid timestamps.")
-            st.stop()
+            return None, "timestamp"
         if invalid_timestamps:
             st.warning(f"Skipped {invalid_timestamps:,} rows with invalid timestamps.")
 
@@ -229,12 +229,12 @@ def load_dashboard_data() -> tuple[pd.DataFrame, str]:
 
     if filtered_df.empty:
         st.warning("No observations match the selected date range.")
-        st.stop()
+        return None, "timestamp"
 
     frame = resample_frame(filtered_df, timestamp_column, resolution)
     if frame.empty:
         st.warning("No observations remain at this time resolution.")
-        st.stop()
+        return None, "timestamp"
 
     st.session_state.update(
         {

@@ -13,8 +13,11 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from statsmodels.tsa.arima.model import ARIMA as _ARIMA
-from arch import arch_model
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover
+    from statsmodels.tsa.arima.model import ARIMA as _ARIMA
+    from arch import arch_model
 
 
 # ── 1. Naïve / Persistence ────────────────────────────────────────────────────
@@ -58,14 +61,21 @@ def fit_arima(
     -------
     dict with keys: 'model', 'fitted', 'forecast', 'aic', 'bic'
     """
-    model = _ARIMA(train, order=order).fit()
+    try:
+        from statsmodels.tsa.arima.model import ARIMA
+    except ImportError as exc:
+        raise ImportError(
+            "statsmodels is required for fit_arima. Install requirements-research.txt."
+        ) from exc
+
+    model = ARIMA(train, order=order).fit()
     forecast = model.forecast(steps=forecast_steps)
     return {
         "model": model,
         "fitted": model.fittedvalues,
         "forecast": forecast,
-        "aic": model.aic,
-        "bic": model.bic,
+        "aic": float(model.aic),
+        "bic": float(model.bic),
     }
 
 
@@ -98,6 +108,13 @@ def fit_garch(
     -------
     dict with keys: 'model', 'result', 'conditional_vol', 'variance_forecast'
     """
+    try:
+        from arch import arch_model
+    except ImportError as exc:
+        raise ImportError(
+            "arch is required for fit_garch. Install requirements-research.txt."
+        ) from exc
+
     am = arch_model(train * 100, vol="Garch", p=p, q=q, dist=dist)
     res = am.fit(disp="off")
     forecast = res.forecast(horizon=forecast_horizon, reindex=False)
@@ -107,6 +124,6 @@ def fit_garch(
         "result": res,
         "conditional_vol": res.conditional_volatility / 100,
         "variance_forecast": vol_forecast,
-        "aic": res.aic,
-        "bic": res.bic,
+        "aic": float(res.aic),
+        "bic": float(res.bic),
     }

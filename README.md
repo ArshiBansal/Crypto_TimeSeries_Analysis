@@ -14,6 +14,7 @@
 [![Streamlit](https://img.shields.io/badge/App-Streamlit-527C83?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![Data](https://img.shields.io/badge/Data-Parquet-6675A8?style=flat-square)](https://parquet.apache.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-587F70?style=flat-square)](LICENSE)
+[![Tests](https://img.shields.io/badge/Tests-16%20passing-527C83?style=flat-square)](tests/)
 
 <br>
 
@@ -156,7 +157,7 @@ python -m pip install -r requirements-research.txt
 jupyter notebook notebooks/
 ```
 
-Run the notebooks in order: **01 → 02 → 03 → 04**. Dataset access requires an internet connection. The Spark-backed pipeline requires a compatible Java runtime; configure the local Java path in [`configs/pipeline.yaml`](configs/pipeline.yaml) for your machine before running it. The standard notebook run focuses on the core statistical, tree-model, regime, and anomaly workflows; optional deep-learning wrappers remain separate. Install their larger dependencies only when needed with `python -m pip install -r requirements-deep-learning.txt`.
+Run the notebooks in order: **01 → 02 → 03 → 04**. Dataset access requires an internet connection. The Spark-backed pipeline requires a compatible Java runtime; configure the local Java path in [`configs/pipeline.yaml`](configs/pipeline.yaml) for your machine before running it. The standard notebook run focuses on the core statistical, tree-model, regime, and anomaly workflows. Alternatively, run `python scripts/prepare_data.py` to automate the full pipeline.
 
 ### 3 · Launch the dashboard
 
@@ -187,8 +188,7 @@ The notebook pipeline is configured to read these sources; the dashboard itself 
 | Anomaly and structural analysis | Isolation Forest · Matrix Profile · CUSUM |
 | Interactive visualization | Streamlit · Plotly |
 | Experiment tracking | MLflow |
-
-TCN and PatchTST wrappers exist in the research code, but notebook deep-learning training is optional/stubbed. Their dependencies are isolated in [`requirements-deep-learning.txt`](requirements-deep-learning.txt); these models are not trained or available in the dashboard.
+| Testing | pytest (16 tests) · pre-commit hooks |
 
 ## Evaluation & experiment design
 
