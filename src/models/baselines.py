@@ -1,66 +1,29 @@
 """
 src/models/baselines.py
 
-Econometric / naïve baseline models.
-
-Baselines implemented
----------------------
-1. Naïve / Persistence  : forecast[t] = actual[t-1]
-2. ARIMA                : via statsmodels
-3. GARCH(1,1)           : via arch library
+Econometric, naive, and linear baseline models.
 """
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:  # pragma: no cover
-    from statsmodels.tsa.arima.model import ARIMA as _ARIMA
-    from arch import arch_model
 
 
-# ── 1. Naïve / Persistence ────────────────────────────────────────────────────
+# ── 1. Naive / Persistence ──────────────────────────────────────────
 
 def naive_persistence(series: pd.Series, horizon: int = 1) -> pd.Series:
-    """
-    Persistence (random-walk) forecast: predict last observed value.
-
-    Parameters
-    ----------
-    series : pd.Series
-        Observed target series (e.g. log returns).
-    horizon : int
-        Steps ahead.
-
-    Returns
-    -------
-    pd.Series of forecasts (shifted by horizon).
-    """
+    """Persistence (random-walk) forecast: predict last observed value."""
     return series.shift(horizon)
 
 
-# ── 2. ARIMA ──────────────────────────────────────────────────────────────────
+# ── 2. ARIMA ────────────────────────────────────────────────────────
 
 def fit_arima(
     train: pd.Series,
     order: tuple[int, int, int] = (1, 0, 1),
     forecast_steps: int = 1,
 ) -> dict:
-    """
-    Fit an ARIMA model on ``train`` and return in-sample fitted values
-    plus out-of-sample forecast for ``forecast_steps`` steps.
-
-    Parameters
-    ----------
-    train : pd.Series
-    order : (p, d, q)
-    forecast_steps : int
-
-    Returns
-    -------
-    dict with keys: 'model', 'fitted', 'forecast', 'aic', 'bic'
-    """
+    """Fit an ARIMA model and return fitted values and out-of-sample forecast."""
     try:
         from statsmodels.tsa.arima.model import ARIMA
     except ImportError as exc:
@@ -79,34 +42,21 @@ def fit_arima(
     }
 
 
-# ── 3. GARCH(1,1) ─────────────────────────────────────────────────────────────
+# ── 3. GARCH / volatility baseline ──────────────────────────────────
 
 def fit_garch(
     train: pd.Series,
     p: int = 1,
     q: int = 1,
-    dist: str = "normal",
+    dist: str = "t",
+    vol: str = "Garch",
     forecast_horizon: int = 1,
 ) -> dict:
     """
-    Fit a GARCH(p,q) model on ``train`` log-return series.
+    Fit a (G)ARCH-family volatility model on ``train`` log-return series.
 
-    Parameters
-    ----------
-    train : pd.Series
-        Log-return series (stationary; in percentage units works best).
-    p : int
-        GARCH lag order (volatility).
-    q : int
-        ARCH lag order (innovation).
-    dist : str
-        Innovation distribution: 'normal', 't', 'skewt'.
-    forecast_horizon : int
-        Steps-ahead variance forecast.
-
-    Returns
-    -------
-    dict with keys: 'model', 'result', 'conditional_vol', 'variance_forecast'
+    Defaults to Student-t innovations, which better capture fat-tailed crypto
+    returns than a normal distribution.
     """
     try:
         from arch import arch_model
@@ -115,10 +65,14 @@ def fit_garch(
             "arch is required for fit_garch. Install requirements-research.txt."
         ) from exc
 
-    am = arch_model(train * 100, vol="Garch", p=p, q=q, dist=dist)
+    clean = pd.to_numeric(train, errors="coerce").dropna()
+    if clean.empty:
+        raise ValueError("train series has no valid observations for GARCH fitting.")
+
+    am = arch_model(clean * 100, vol=vol, p=p, q=q, dist=dist)
     res = am.fit(disp="off")
     forecast = res.forecast(horizon=forecast_horizon, reindex=False)
-    vol_forecast = np.sqrt(forecast.variance.values[-1]) / 100  # back to raw scale
+    vol_forecast = np.sqrt(np.asarray(forecast.variance.values[-1], dtype=float)) / 100
     return {
         "model": am,
         "result": res,
@@ -126,4 +80,51 @@ def fit_garch(
         "variance_forecast": vol_forecast,
         "aic": float(res.aic),
         "bic": float(res.bic),
+        "distribution": dist,
+        "vol_model": vol,
     }
+
+
+# ── 4. Regularized linear baseline ──────────────────────────────────
+
+def fit_linear_baseline(
+    X_train: pd.DataFrame | np.ndarray,
+    y_train: pd.Series | np.ndarray,
+    X_val: pd.DataFrame | np.ndarray | None = None,
+    y_val: pd.Series | np.ndarray | None = None,
+    model_type: str = "ridge",
+    alpha: float = 1.0,
+) -> dict:
+    """
+    Fit a regularized linear baseline for tabular return forecasting.
+
+    This provides a simple, interpretable benchmark alongside tree models.
+    """
+    try:
+        from sklearn.linear_model import ElasticNet, Lasso, Ridge
+        from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import StandardScaler
+    except ImportError as exc:
+        raise ImportError(
+            "scikit-learn is required for fit_linear_baseline."
+        ) from exc
+
+    model_type = model_type.lower()
+    if model_type == "ridge":
+        estimator = Ridge(alpha=alpha)
+    elif model_type == "lasso":
+        estimator = Lasso(alpha=alpha, max_iter=10000)
+    elif model_type in {"elasticnet", "elastic_net"}:
+        estimator = ElasticNet(alpha=alpha, l1_ratio=0.5, max_iter=10000)
+    else:
+        raise ValueError("model_type must be one of: ridge, lasso, elasticnet")
+
+    model = Pipeline([("scaler", StandardScaler()), ("model", estimator)])
+    model.fit(X_train, y_train)
+
+    result = {"model": model, "model_type": model_type, "alpha": alpha}
+    if X_val is not None:
+        result["val_pred"] = model.predict(X_val)
+        if y_val is not None:
+            result["val_residuals"] = np.asarray(y_val) - np.asarray(result["val_pred"])
+    return result

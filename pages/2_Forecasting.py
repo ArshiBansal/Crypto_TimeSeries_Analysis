@@ -1,21 +1,25 @@
 """Forecast diagnostics using exported, trusted model artifacts."""
 
 import joblib
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 import yaml
-from sklearn.metrics import mean_absolute_error, mean_squared_error
+from plotly.subplots import make_subplots
 
 from src.dashboard import (
     ACCENT,
     BLUE,
+    CORAL,
+    PURPLE,
     ROOT,
     apply_app_style,
     chart_template,
     load_dashboard_data,
     sample_for_chart,
 )
+from src.models.evaluator import forecast_metrics
 
 
 st.set_page_config(page_title="Forecasts", page_icon="⌁", layout="wide")
@@ -31,7 +35,7 @@ st.markdown(
       <div class="hero-kicker">02 &nbsp; / &nbsp; FORECAST REVIEW</div>
       <h1>Predictions, beside the observations.</h1>
       <p>Replay an exported forecasting model over the selected historical
-         window and inspect its errors and learned feature weights.</p>
+         window and inspect error, direction, residuals, and feature weights.</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -67,7 +71,7 @@ if not split_path.exists():
     st.stop()
 
 with split_path.open(encoding="utf-8") as file:
-    split_metadata = yaml.safe_load(file)
+    split_metadata = yaml.safe_load(file) or {}
 target_column = split_metadata.get("target_col")
 if not target_column or target_column not in frame.columns:
     st.error(
@@ -118,68 +122,93 @@ if model is None or scaler is None:
     st.error("The selected artifact must contain both `model` and `scaler` entries.")
     st.stop()
 
-features = frame[feature_columns]
-target = pd.to_numeric(frame[target_column], errors="coerce")
-valid = features.notna().all(axis=1) & target.notna()
-features = features.loc[valid]
-target = target.loc[valid]
-if features.empty:
+work = frame[[timestamp_column] + feature_columns + [target_column]].copy()
+work[timestamp_column] = pd.to_datetime(work[timestamp_column], errors="coerce", utc=True)
+work[target_column] = pd.to_numeric(work[target_column], errors="coerce")
+valid = work[feature_columns].notna().all(axis=1) & work[target_column].notna() & work[timestamp_column].notna()
+work = work.loc[valid].sort_values(timestamp_column)
+if work.empty:
     st.warning("No complete feature/target rows are available in this date range.")
     st.stop()
 
-sampled_features = sample_for_chart(features, forecast_points)
-sampled_target = target.loc[sampled_features.index]
+sampled = sample_for_chart(work, forecast_points)
 try:
-    predictions = model.predict(scaler.transform(sampled_features))
+    predictions = model.predict(scaler.transform(sampled[feature_columns]))
 except Exception as error:
     st.error("The model could not predict from the selected feature set.")
     st.exception(error)
     st.stop()
 
-predicted = pd.Series(predictions, index=sampled_target.index, name="Forecast")
-mae = mean_absolute_error(sampled_target, predicted)
-rmse = mean_squared_error(sampled_target, predicted) ** 0.5
+predicted = pd.Series(np.asarray(predictions).reshape(-1), index=sampled.index, name="Forecast")
+observed = sampled[target_column].astype(float)
+naive = observed.shift(1)
+eval_mask = naive.notna()
+obs_eval = observed.loc[eval_mask]
+pred_eval = predicted.loc[eval_mask]
+naive_eval = naive.loc[eval_mask]
+metrics = forecast_metrics(obs_eval.to_numpy(), pred_eval.to_numpy(), naive_pred=naive_eval.to_numpy())
+naive_metrics = forecast_metrics(obs_eval.to_numpy(), naive_eval.to_numpy())
+
+split_dates = {k: pd.to_datetime(split_metadata.get(k), errors="coerce", utc=True)
+               for k in ("train_end", "val_end", "test_end") if split_metadata.get(k)}
 with context:
     st.caption(
         "This page replays the saved model across the selected dataset window. "
-        "It is not a new forecast and is not a substitute for the notebook's "
-        "chronological holdout evaluation."
+        "It is not a new forward forecast or a substitute for chronological holdout evaluation."
     )
+    if split_dates:
+        parts = []
+        for key in ("train_end", "val_end", "test_end"):
+            if pd.notna(split_dates.get(key)):
+                parts.append(f"{key.replace('_', ' ')}: {split_dates[key].date()}")
+        st.caption("Split boundaries from metadata: " + " · ".join(parts))
 
-metric_columns = st.columns(4)
-metric_columns[0].metric("Rows evaluated", f"{len(sampled_target):,}")
-metric_columns[1].metric("MAE", f"{mae:.6g}")
-metric_columns[2].metric("RMSE", f"{rmse:.6g}")
-metric_columns[3].metric("Features", f"{len(feature_columns):,}")
+metric_columns = st.columns(6)
+metric_columns[0].metric("Rows evaluated", f"{len(obs_eval):,}")
+metric_columns[1].metric("MAE", f"{metrics['mae']:.4g}")
+metric_columns[2].metric("RMSE", f"{metrics['rmse']:.4g}")
+metric_columns[3].metric("Direction acc.", f"{metrics['directional_accuracy']*100:.1f}%" if np.isfinite(metrics.get('directional_accuracy', np.nan)) else "—")
+metric_columns[4].metric("Correlation (IC)", f"{metrics['correlation']:.3f}" if np.isfinite(metrics.get('correlation', np.nan)) else "—")
+metric_columns[5].metric("MAE vs naive", f"{metrics['naive_scaled_mae']:.3f}x" if np.isfinite(metrics.get('naive_scaled_mae', np.nan)) else "—")
+
+secondary = st.columns(4)
+secondary[0].metric("sMAPE (diagnostic)", f"{metrics['smape']:.2f}%" if np.isfinite(metrics.get('smape', np.nan)) else "—",
+                    help="Unstable near zero for log returns; do not use as the primary selector.")
+secondary[1].metric("MASE", f"{metrics['mase']:.3f}" if np.isfinite(metrics.get('mase', np.nan)) else "—")
+secondary[2].metric("Naive MAE", f"{naive_metrics['mae']:.4g}" if np.isfinite(naive_metrics.get('mae', np.nan)) else "—")
+secondary[3].metric("Naive RMSE", f"{naive_metrics['rmse']:.4g}" if np.isfinite(naive_metrics.get('rmse', np.nan)) else "—")
 
 figure = go.Figure()
-figure.add_trace(
-    go.Scatter(
-        x=frame.loc[sampled_target.index, timestamp_column],
-        y=sampled_target,
-        name="Observed",
-        mode="lines",
-        line=dict(color=ACCENT, width=1.8),
-    )
-)
-figure.add_trace(
-    go.Scatter(
-        x=frame.loc[sampled_target.index, timestamp_column],
-        y=predicted,
-        name="Model replay",
-        mode="lines",
-        line=dict(color=BLUE, width=1.6, dash="dot"),
-    )
-)
-figure.update_layout(
-    template=chart_template(),
-    height=470,
-    margin=dict(l=12, r=12, t=25, b=12),
-    hovermode="x unified",
-    yaxis_title=target_column,
-)
+figure.add_trace(go.Scatter(x=sampled[timestamp_column], y=observed, name="Observed",
+                             mode="lines", line=dict(color=ACCENT, width=1.8)))
+figure.add_trace(go.Scatter(x=sampled[timestamp_column], y=predicted, name="Model replay",
+                             mode="lines", line=dict(color=BLUE, width=1.6, dash="dot")))
+figure.add_trace(go.Scatter(x=sampled[timestamp_column], y=naive, name="Naive (t-1)",
+                             mode="lines", line=dict(color=PURPLE, width=1.2, dash="dash")))
+for label, key, color in [("Train end", "train_end", "#9AA7B2"), ("Val end", "val_end", "#D4B483"), ("Test end", "test_end", CORAL)]:
+    ts = split_dates.get(key)
+    if pd.notna(ts) and sampled[timestamp_column].min() <= ts <= sampled[timestamp_column].max():
+        figure.add_vline(x=ts, line_dash="dash", line_color=color, opacity=0.7)
+figure.update_layout(template=chart_template(), height=450, margin=dict(l=12, r=12, t=25, b=12),
+                      hovermode="x unified", yaxis_title=target_column)
 figure.update_xaxes(showgrid=False)
 st.plotly_chart(figure, use_container_width=True, config={"displaylogo": False})
+
+residuals = (obs_eval - pred_eval)
+res_fig = make_subplots(rows=1, cols=2, column_widths=[0.62, 0.38],
+                        subplot_titles=("Residuals over time (obs - pred)", "Predicted vs actual"))
+res_fig.add_trace(go.Scatter(x=sampled.loc[obs_eval.index, timestamp_column], y=residuals,
+                             mode="lines", name="Residual", line=dict(color=CORAL, width=1.2)), row=1, col=1)
+res_fig.add_hline(y=0, line_dash="dot", line_color="#9AA7B2", row=1, col=1)
+res_fig.add_trace(go.Scatter(x=obs_eval, y=pred_eval, mode="markers", name="Pred vs actual",
+                             marker=dict(color=BLUE, size=4, opacity=0.45)), row=1, col=2)
+if len(obs_eval):
+    lo = float(min(obs_eval.min(), pred_eval.min()))
+    hi = float(max(obs_eval.max(), pred_eval.max()))
+    res_fig.add_trace(go.Scatter(x=[lo, hi], y=[lo, hi], mode="lines", name="Ideal",
+                                 line=dict(color="#9AA7B2", dash="dot")), row=1, col=2)
+res_fig.update_layout(template=chart_template(), height=360, margin=dict(l=12, r=12, t=30, b=12), showlegend=False)
+st.plotly_chart(res_fig, use_container_width=True, config={"displaylogo": False})
 
 importance = getattr(model, "feature_importances_", None)
 if importance is not None and len(importance) == len(feature_columns):
@@ -188,23 +217,14 @@ if importance is not None and len(importance) == len(feature_columns):
         .sort_values("importance")
         .tail(25)
     )
-    importance_chart = go.Figure(
-        go.Bar(
-            x=importance_frame["importance"],
-            y=importance_frame["feature"],
-            orientation="h",
-            marker_color=ACCENT,
-        )
-    )
-    importance_chart.update_layout(
-        template=chart_template(),
-        height=max(350, 22 * len(importance_frame)),
-        margin=dict(l=12, r=12, t=25, b=12),
-        xaxis_title="Model importance",
-    )
+    importance_chart = go.Figure(go.Bar(x=importance_frame["importance"], y=importance_frame["feature"],
+                                        orientation="h", marker_color=ACCENT))
+    importance_chart.update_layout(template=chart_template(), height=max(350, 22 * len(importance_frame)),
+                                   margin=dict(l=12, r=12, t=25, b=12), xaxis_title="Model importance")
     st.markdown("#### What the model used")
-    st.plotly_chart(
-        importance_chart,
-        use_container_width=True,
-        config={"displaylogo": False},
-    )
+    st.plotly_chart(importance_chart, use_container_width=True, config={"displaylogo": False})
+
+st.caption(
+    "Direction accuracy, correlation/IC, MASE, and naive-scaled MAE are better decision signals than sMAPE "
+    "for near-zero return targets. Use chronological/walk-forward holdout evaluation for model selection."
+)

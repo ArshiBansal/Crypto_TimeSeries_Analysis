@@ -85,3 +85,43 @@ def test_anomaly_metrics_with_ground_truth():
     assert "precision_at_k" in result
     # Top-2 most anomalous are indices 0 and 1, both true anomalies
     assert result["precision_at_k"] == pytest.approx(1.0)
+
+
+def test_forecast_metrics_extended():
+    y_true = np.array([0.01, -0.02, 0.015, -0.005, 0.02])
+    y_pred = np.array([0.008, -0.01, 0.02, -0.004, 0.01])
+    result = forecast_metrics(y_true, y_pred)
+    assert 0 <= result["directional_accuracy"] <= 1
+    assert np.isnan(result["correlation"]) or -1 <= result["correlation"] <= 1
+    assert "mase" in result and "naive_scaled_mae" in result
+
+
+def test_forecast_metrics_diebold_mariano():
+    y_true = np.array([0.1, -0.2, 0.15, -0.05, 0.2, -0.1])
+    y_pred = np.array([0.09, -0.18, 0.14, -0.06, 0.18, -0.09])
+    naive = np.roll(y_true, 1)
+    naive[0] = y_true[0]
+    result = forecast_metrics(y_true, y_pred, naive_pred=naive)
+    assert "dm_stat" in result and "p_value" in result
+
+
+def test_regime_diagnostics_basic():
+    from sklearn.mixture import GaussianMixture
+    from src.models.regime_models import gmm_diagnostics
+
+    X = np.array([[0.0], [0.1], [5.0], [5.1], [0.2], [4.9]])
+    model = GaussianMixture(n_components=2, random_state=0).fit(X)
+    labels = model.predict(X)
+    diag = gmm_diagnostics(X, model, labels)
+    assert diag["n_components"] == 2
+    assert "bic" in diag and "aic" in diag
+    assert sum(diag["state_counts"]) == len(X)
+
+
+def test_rolling_origin_splits():
+    from src.models.rolling_validator import rolling_origin_splits
+
+    splits = list(rolling_origin_splits(n_samples=20, initial_train_size=10, test_size=3, step_size=3, expanding=True))
+    assert splits
+    assert splits[0].train_start == 0 and splits[0].train_end == 10
+    assert splits[0].test_start == 10 and splits[0].test_end == 13
