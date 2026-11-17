@@ -44,11 +44,14 @@ notebooks/models/
 *.arrow
 *.parquet.tmp
 
-# ── Processed data & artifacts (large files) ─────────────────────────
+# ── Generated data, artifacts, reports, and experiment logs ───────────
+# These are produced by notebooks 01-04 or scripts/prepare_data.py and must
+# be regenerated when code/config/notebooks change (not bundled in git).
 processed/
 artifacts/
 reports/figures/
 reports/metrics/
+mlruns/
 
 # ── Configs with secrets ─────────────────────────────────────────────
 configs/secrets.yaml
@@ -79,7 +82,7 @@ htmlcov/
 # ── Notebook output / scratch ────────────────────────────────────────
 *.nbconvert.py
 
-# ── Pre-commit ───────────────────────────────────────────────────────
+# ── Pre-commit (root .pre-commit-config.yaml is tracked) ─────────────
 *.pre-commit-config.yaml.local
 
 # ── Windows-specific ─────────────────────────────────────────────────

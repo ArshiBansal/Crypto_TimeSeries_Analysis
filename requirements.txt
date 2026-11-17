@@ -1,5 +1,5 @@
 # Python runtime: 3.10 or newer
-# Dashboard UI, Parquet data, charts, and serialized model artifact support.
+# Dashboard/runtime dependencies (Streamlit UI, data IO, charts, artifact loading).
 streamlit>=1.46.0
 pandas>=2.1.0
 numpy>=1.26.0
@@ -17,3 +17,6 @@ xgboost>=2.1.0
 
 # Testing.
 pytest>=8.0.0
+
+# Optional research-only deps (statsmodels, arch, stumpy, ruptures, pyspark,
+# datasets, mlflow, etc.) live in requirements-research.txt.

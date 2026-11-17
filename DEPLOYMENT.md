@@ -5,62 +5,74 @@ the analysis pages from the sibling `pages/` directory.
 
 ## Required files and folders
 
-The dashboard reads prepared Parquet files from `processed/`. Some analysis
-pages also read optional model files and exported CSVs from
-`artifacts/models/`. These generated directories are git-ignored, so they are
-not automatically present in a fresh clone or a Streamlit Community Cloud
-deployment.
+The app reads prepared Parquet data from `processed/` and optional exported
+artifacts from `artifacts/` and `reports/` (all git-ignored, not bundled).
 
-The Home page can start without prepared data, but its analytics require at
-least one readable Parquet file with a timestamp column. Pages that use saved
-models or scores require their corresponding artifacts.
+- **Minimum for analytics:** at least one readable Parquet file with a
+  timestamp column in `processed/` (e.g. `btc_features.parquet`).
+- **Forecasting (`pages/2_Forecasting.py`):** `processed/split_meta.yaml` and
+  LightGBM/CatBoost artifacts in `artifacts/models/` (`lgbm_return.pkl`,
+  `catboost_return.pkl`); optional exports `reports/metrics/walk_forward_summary.json`,
+  `artifacts/models/*_test_predictions.csv`.
+- **Volatility (`pages/3_Volatility.py`):** `artifacts/models/garch_cond_vol.csv`
+  (optional realized-vol comparison uses overlapping feature columns).
+- **Regimes (`pages/4_Regimes.py`):** GMM/HMM `.pkl` in `artifacts/models/`,
+  `artifacts/scalers/regime_scaler.pkl`, `processed/split_meta.yaml`; optional
+  `reports/metrics/regime_diagnostics.json`.
+- **Anomalies (`pages/5_Anomalies.py`):** `artifacts/models/anomaly_scores.csv`;
+  optional `artifacts/models/matrix_profile.csv` and `matrix_profile_meta.json`.
+- **Change points (`pages/6_ChangePoints.py`):** `artifacts/models/changepoints.csv`.
+
+Pages degrade gracefully when data/artifacts are missing, but analyses are only
+meaningful with artifacts regenerated from the current code and notebooks.
+
+## Regenerating artifacts (local/research environment)
+
+Install research dependencies and run the notebook pipeline in order
+`01_data_pipeline` → `02_feature_engineering` → `03_modelling` → `04_evaluation_and_export`,
+or use the helper:
+
+```bash
+python -m pip install -r requirements-research.txt
+python scripts/prepare_data.py --full
+```
+
+Notes:
+- `--no-notebooks` only creates directories.
+- Full Spark-backed processing requires a compatible Java installation as
+  configured in [`configs/pipeline.yaml`](configs/pipeline.yaml) (Spark/Java
+  paths are not modified by the script).
+- Re-run regeneration after changes to data schema, features, models, configs,
+  or notebooks; existing outputs in `processed/`, `artifacts/`, `reports/`, and
+  `configs/experiments.yaml` may be stale.
 
 ## Streamlit Community Cloud
 
 1. Push the application source to a GitHub repository.
-2. In Streamlit Community Cloud, select that repository and set **Main file
-   path** to `Home.py`.
-3. Configure the app's Python version to 3.10 or newer, consistent with the
-   project dependencies.
-4. Provision the prepared Parquet data and optional artifacts **before**
-   deploying. The app does not download them automatically. Options:
-   - Run `python scripts/prepare_data.py` locally and commit the generated
-     `processed/` and `artifacts/` directories (review `.gitignore` first —
-     large files should stay out of Git).
-   - Download versioned files from controlled object storage during app
-     startup via a `requirements.txt`-installed helper or a Streamlit
-     `secrets.toml`-referenced URL.
-   - Use a persistent data store approved by your hosting platform.
-5. Add credentials through Streamlit's app secrets or the hosting platform's
-   secret manager. Never place secrets in source code or commit
-   `.streamlit/secrets.toml`.
-6. Confirm the app can read its data and navigate to each page that depends on
-   optional artifacts.
+2. Set **Main file path** to `Home.py` and use Python 3.10+.
+3. Provision `processed/`, required `artifacts/`, and any `reports/metrics`/figure
+   exports **before** deploying (the app does not download them). Options:
+   - Regenerate locally and publish versioned artifacts via controlled object
+     storage or a persistent data store approved by your hosting platform.
+   - Avoid committing large generated files to git unless size/terms permit;
+     review `.gitignore`.
+4. Add credentials via Streamlit app secrets or the platform secret manager.
+   Never commit `.streamlit/secrets.toml` or secrets in source.
+5. Validate each page that depends on optional artifacts after deploy.
 
-The app now degrades gracefully when `processed/` is absent: each page shows
-a friendly "no data" message instead of crashing. To show real analytics,
-provision the Parquet files as described above.
-
-## Local deployment check
+## Local dashboard check
 
 ```bash
 python -m pip install -r requirements.txt
 streamlit run Home.py
 ```
 
-For the complete data-generation workflow, install `requirements-research.txt`
-and run the notebooks in order. Spark-backed processing also requires a
-compatible Java installation; see [`configs/pipeline.yaml`](configs/pipeline.yaml).
-Alternatively, run `python scripts/prepare_data.py` to automate the notebook
-sequence.
-
 ## Operational notes
 
-- Use the smallest dependency set required by the deployed app. The research
-  environment includes heavier notebook and modelling dependencies.
-- Deploy only trusted serialized model artifacts: loading pickle/joblib files
-  can execute code.
-- Rebuild and validate generated artifacts when the data schema or feature
-  pipeline changes.
-- Check dataset terms and redistribution permissions before storing source data
-  in a hosted environment.
+- Use the smallest dependency set for deployment; research/notebook deps are in
+  `requirements-research.txt` (includes optional `statsmodels`, `arch`, `stumpy`,
+  `ruptures`, Spark/HF/MLflow stack).
+- Load only trusted serialized artifacts (`pickle`/`joblib` can execute code).
+- Short-horizon BTC return forecasts are noisy; treat walk-forward/baseline
+  comparisons and risk/diagnostic views as primary decision context.
+- Check dataset terms and redistribution permissions before hosting source data.

@@ -32,20 +32,29 @@ This project emphasizes **higher-signal analysis**: volatility/risk, regimes, an
 
 | Area | Details |
 |:--|:--|
-| **Forecast evaluation** | Naive and ridge/linear baselines, ARIMA as benchmark-only, LightGBM/CatBoost; metrics include MAE/RMSE, direction accuracy, correlation/IC, MASE, naive-scaled MAE (DM where computed). Walk-forward/expanding evaluation utilities in `src/models/rolling_validator.py`, exported by notebooks when run. |
-| **Volatility/risk** | Rolling/realized-vol proxies and conditional volatility (GARCH with Student-t in config) compared with QLIKE/MAE where available. |
-| **Regimes** | GMM/HMM with diagnostics (log-likelihood/BIC, state shares, persistence/switches) — exploratory, not ground truth. |
-| **Anomalies & breaks** | Isolation Forest scores with threshold sensitivity/context; CUSUM change-points with local pre/post summaries; Matrix Profile motif/discord export when generated. |
-| **Dashboard** | Streamlit `Home.py` + `pages/` (Data Lab, Forecasting replay/diagnostics, Volatility, Regimes, Anomalies, Change Points) reading local `processed/` and `artifacts/` exports. |
+| **Forecast evaluation** | Naive persistence and ridge/linear baselines, ARIMA benchmark-only, LightGBM/CatBoost. Metrics: MAE/RMSE, directional accuracy, correlation/IC, MASE, naive-scaled MAE (Diebold–Mariano where computed). Rolling-origin/walk-forward utilities in `src/models/rolling_validator.py`, exported when notebooks run. |
+| **Volatility/risk** | Rolling/realized-vol proxies and conditional volatility (GARCH with Student-t per `configs/pipeline.yaml`) compared with QLIKE/MAE where available; drawdown diagnostics. |
+| **Regimes** | GMM/HMM with diagnostics (log-likelihood/BIC, state shares, persistence/switches, regime-conditioned summaries) — exploratory, not ground truth. |
+| **Anomalies & breaks** | Isolation Forest scores with threshold sensitivity and market-context overlays; CUSUM change-points with local pre/post summaries; Matrix Profile motif/discord exports when generated. |
+| **Dashboard** | Streamlit `Home.py` + `pages/` (Data Lab, Forecasting replay/diagnostics, Volatility, Regimes, Anomalies, Change Points) reading local `processed/`, `artifacts/`, and `reports/` exports. |
 
-## Pipeline
+## Pipeline & artifacts
 
 Run notebooks in order: `01_data_pipeline` → `02_feature_engineering` → `03_modelling` → `04_evaluation_and_export`.
 
-- Notebook 03: baselines + walk-forward checks, tree models, GARCH (Student-t) vs realized-vol proxy, regimes/anomalies/change-points/matrix-profile diagnostics and exports.
-- Notebook 04: consolidated metrics, naive/linear comparison, residual diagnostics, experiment logging, artifact readiness.
+- **03 (modelling):** baselines + walk-forward checks, tree models, GARCH (Student-t) vs realized-vol proxy, regimes/anomalies/change-points/matrix-profile diagnostics and exports.
+- **04 (evaluation/export):** consolidated metrics, naive/linear comparison, residual diagnostics, experiment logging, artifact readiness.
 
-Helper: `python scripts/prepare_data.py [--full] [--no-notebooks]` (research deps required; full Spark pipeline needs compatible Java per `configs/pipeline.yaml`).
+Helper (research environment):
+
+```bash
+python -m pip install -r requirements-research.txt
+python scripts/prepare_data.py --full
+```
+
+`--no-notebooks` only creates directories. Spark-backed processing requires compatible Java per `configs/pipeline.yaml`. Generated outputs (`processed/`, `artifacts/`, `reports/`, `mlruns/`, `configs/experiments.yaml`) are git-ignored and must be regenerated after code/config/notebook changes.
+
+Key optional exports consumed by pages include: `processed/split_meta.yaml`, `artifacts/models/{lgbm,catboost}_return.pkl`, `garch_cond_vol.csv`, `anomaly_scores.csv`, `changepoints.csv`, `matrix_profile.csv`/`matrix_profile_meta.json`, `artifacts/scalers/regime_scaler.pkl`, `reports/metrics/walk_forward_summary.json`, `regime_diagnostics.json`, and test-prediction CSVs.
 
 ## Quick start
 
@@ -56,9 +65,9 @@ python -m pip install -r requirements.txt
 streamlit run Home.py
 ```
 
-Full reproduction: `python -m pip install -r requirements-research.txt` then run notebooks 01→04.
+Dashboard-only installs do not include research deps (`statsmodels`, `arch`, `stumpy`, `ruptures`, Spark/HF/MLflow, etc.). For full reproduction run notebooks 01→04 with `requirements-research.txt`.
 
-> **Data/artifacts not bundled.** Generate/provision `processed/` and `artifacts/` locally (git-ignored). Treat exported joblib/pickle artifacts as trusted.
+> **Data/artifacts not bundled.** Provision/regenerate locally (git-ignored). Treat exported `joblib`/`pickle` artifacts as trusted. See [DEPLOYMENT.md](DEPLOYMENT.md) for deployment details.
 
 ## Responsible use
 

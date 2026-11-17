@@ -1,5 +1,7 @@
 """Explore exported Isolation Forest anomaly scores."""
 
+import json
+
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -124,7 +126,7 @@ if mp_path.exists():
     st.markdown("#### Matrix profile (motif/discord, exploratory)")
     try:
         mp = load_csv(str(mp_path))
-        ts_c = next((c for c in [score_timestamp_column, timestamp_column, "timestamp", "datetime", "date", "time"] if c in mp.columns), None)
+        ts_c = next((c for c in [ts_col, timestamp_column, "timestamp", "datetime", "date", "time"] if c in mp.columns), None)
         val_c = next((c for c in ["matrix_profile", "mp", "value"] if c in mp.columns), None)
         if ts_c and val_c:
             mp[ts_c] = pd.to_datetime(mp[ts_c], errors="coerce", utc=True)

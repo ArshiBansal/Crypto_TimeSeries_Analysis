@@ -1,5 +1,7 @@
 """Explore market states from exported Gaussian or hidden Markov models."""
 
+import json
+
 import joblib
 import numpy as np
 import pandas as pd
