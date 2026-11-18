@@ -39,9 +39,9 @@ price_column = price_candidates[0] if price_candidates else None
 selected_file = st.session_state.get("_selected_file", "prepared dataset")
 resolution = st.session_state.get("resolution", "Raw")
 max_points = st.session_state.get("max_pts", 5000)
-light_canvas = st.session_state.get("light_mode", False)
-muted_color = "#60717D" if light_canvas else "#9AABB5"
-grid_color = "#E0E7EB" if light_canvas else "#293743"
+light_canvas = False
+muted_color = "#9AABB5"
+grid_color = "#293743"
 
 start_label = frame[timestamp_column].min().strftime("%d %b %Y")
 end_label = frame[timestamp_column].max().strftime("%d %b %Y")
@@ -123,7 +123,7 @@ def format_price(value: float) -> str:
     return f"${value:.6f}"
 
 
-metrics = st.columns(6)
+metrics = st.columns(4)
 metrics[0].metric(
     "Last close",
     format_price(latest_price),
@@ -142,11 +142,6 @@ metrics[3].metric(
     "Worst drawdown",
     f"{max_drawdown:.2f}%" if pd.notna(max_drawdown) else "—",
 )
-metrics[4].metric(
-    "Volume in view",
-    f"{total_volume:,.4g}" if pd.notna(total_volume) else "—",
-)
-metrics[5].metric("Bars", f"{len(frame):,}")
 
 st.write("")
 overview_tab, rhythm_tab = st.tabs(["THE TAPE", "CALENDAR RHYTHM"])

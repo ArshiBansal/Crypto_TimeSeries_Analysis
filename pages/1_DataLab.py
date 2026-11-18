@@ -26,8 +26,7 @@ if frame is None:
 numeric_columns = frame.select_dtypes(include="number").columns.tolist()
 selected_file = st.session_state.get("_selected_file", "prepared dataset")
 max_points = st.session_state.get("max_pts", 5000)
-light_canvas = st.session_state.get("light_mode", False)
-grid_color = "#E0E7EB" if light_canvas else "#293743"
+grid_color = "#293743"
 
 st.markdown(
     """
@@ -154,17 +153,16 @@ with feature_tab:
                 config={"displaylogo": False},
             )
             stats = pd.to_numeric(frame[selected_feature], errors="coerce").describe()
-            stat_columns = st.columns(5)
+            stat_columns = st.columns(4)
             for column, label in zip(
                 stat_columns,
-                ["Mean", "Std dev", "Median", "Min", "Max"],
+                ["Mean", "Std dev", "Median", "Min"],
             ):
                 key = {
                     "Mean": "mean",
                     "Std dev": "std",
                     "Median": "50%",
                     "Min": "min",
-                    "Max": "max",
                 }[label]
                 value = stats.get(key, float("nan"))
                 column.metric(label, f"{value:,.4g}" if pd.notna(value) else "—")

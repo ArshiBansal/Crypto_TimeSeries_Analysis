@@ -112,10 +112,6 @@ def sample_for_chart(frame: pd.DataFrame, limit: int = 5000) -> pd.DataFrame:
 def load_dashboard_data() -> tuple[pd.DataFrame, str]:
     """Render global controls and publish the selected frame to session state."""
     with st.sidebar:
-        st.markdown("## BTC / FIELDNOTES")
-        st.caption("Historical market observatory")
-        st.toggle("Light canvas", key="light_mode")
-        st.divider()
 
         parquet_files = (
             sorted(PROCESSED_DIR.glob("*.parquet"))
@@ -251,17 +247,12 @@ def load_dashboard_data() -> tuple[pd.DataFrame, str]:
 
 
 def apply_app_style() -> None:
-    light = st.session_state.get("light_mode", False)
-    background = "#F2F5F7" if light else "#0D141C"
-    panel = "#FFFFFF" if light else "#151F29"
-    border = "#DCE4E9" if light else "#263441"
-    text = "#202D37" if light else "#E6EDF1"
-    muted = "#60717D" if light else "#9AABB5"
-    hero_background = (
-        "linear-gradient(120deg, #FFFFFF 8%, #E8F1F1 100%)"
-        if light
-        else "linear-gradient(120deg, #1B2A36 0%, #17221F 100%)"
-    )
+    background = "#0D141C"
+    panel = "#151F29"
+    border = "#263441"
+    text = "#E6EDF1"
+    muted = "#9AABB5"
+    hero_background = "linear-gradient(120deg, #1B2A36 0%, #17221F 100%)"
 
     st.markdown(
         f"""
@@ -300,4 +291,4 @@ def apply_app_style() -> None:
 
 
 def chart_template() -> str:
-    return "plotly_white" if st.session_state.get("light_mode", False) else "plotly_dark"
+    return "plotly_dark"

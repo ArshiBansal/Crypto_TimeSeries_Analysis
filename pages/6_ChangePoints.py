@@ -89,7 +89,7 @@ for point in visible_points[cp_ts_col]:
 figure.update_layout(template=chart_template(), height=540 if rows == 2 else 420, margin=dict(l=12, r=12, t=22, b=12),
                      hovermode="x unified", legend=dict(orientation="h", y=1.04, x=0))
 figure.update_xaxes(showgrid=False)
-figure.update_yaxes(gridcolor="#E0E7EB" if st.session_state.get("light_mode", False) else "#293743")
+figure.update_yaxes(gridcolor="#293743")
 st.plotly_chart(figure, use_container_width=True, config={"displaylogo": False, "scrollZoom": True})
 
 summary_col = volatility_column or next((c for c in ("log_return", "simple_return") if c in frame.columns), None)

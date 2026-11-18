@@ -76,11 +76,29 @@ with split_path.open(encoding="utf-8") as file:
     split_metadata = yaml.safe_load(file) or {}
 target_column = split_metadata.get("target_col")
 if not target_column or target_column not in frame.columns:
-    st.error(
-        "The selected dataset does not contain the model's target listed in "
-        "`split_meta.yaml`. Choose the matching feature dataset or rerun notebooks 01–02."
-    )
-    st.stop()
+    # Auto-detect target-like columns in the current dataset
+    target_candidates = [
+        c for c in frame.columns
+        if c.startswith("target_") or c in ("log_return", "simple_return", "return")
+    ]
+    if target_candidates:
+        st.warning(
+            f"Default target `{target_column}` not in this dataset. "
+            f"Available target-like columns: {', '.join(target_candidates)}"
+        )
+        target_column = st.selectbox(
+            "Select target column for evaluation",
+            target_candidates,
+            index=0,
+            help="Choose the column to use as the ground-truth target for forecast evaluation.",
+        )
+    else:
+        st.error(
+            "The selected dataset does not contain the model's target listed in "
+            "`split_meta.yaml` and no target-like columns were found. "
+            "Choose the matching feature dataset or rerun notebooks 01–02."
+        )
+        st.stop()
 
 control, context = st.columns([1, 2], gap="large")
 with control:
