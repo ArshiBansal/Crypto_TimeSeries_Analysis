@@ -14,6 +14,9 @@ arch>=6.3.0
 ruptures>=1.1.9
 stumpy>=1.12.0
 
+# Explainability (SHAP for tree model interpretation on Forecasts page).
+shap>=0.44.0
+
 # Plotting, experiment tracking, and notebook execution.
 matplotlib>=3.8.0
 seaborn>=0.13.0

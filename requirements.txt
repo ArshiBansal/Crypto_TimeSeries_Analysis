@@ -8,6 +8,7 @@ plotly>=5.20.0
 pyyaml>=6.0
 joblib>=1.3.0
 scikit-learn>=1.4.0
+scipy>=1.11.0
 
 # Required when loading the corresponding saved forecasting/regime artifacts.
 lightgbm>=4.3.0

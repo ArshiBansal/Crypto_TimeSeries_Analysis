@@ -28,15 +28,15 @@ This project emphasizes **higher-signal analysis**: volatility/risk, regimes, an
 
 > No live feeds, trade execution, or trading signals.
 
-## What’s included
+## What's included
 
 | Area | Details |
 |:--|:--|
-| **Forecast evaluation** | Naive persistence and ridge/linear baselines, ARIMA benchmark-only, LightGBM/CatBoost. Metrics: MAE/RMSE, directional accuracy, correlation/IC, MASE, naive-scaled MAE (Diebold–Mariano where computed). Rolling-origin/walk-forward utilities in `src/models/rolling_validator.py`, exported when notebooks run. |
-| **Volatility/risk** | Rolling/realized-vol proxies and conditional volatility (GARCH with Student-t per `configs/pipeline.yaml`) compared with QLIKE/MAE where available; drawdown diagnostics. |
-| **Regimes** | GMM/HMM with diagnostics (log-likelihood/BIC, state shares, persistence/switches, regime-conditioned summaries) — exploratory, not ground truth. |
-| **Anomalies & breaks** | Isolation Forest scores with threshold sensitivity and market-context overlays; CUSUM change-points with local pre/post summaries; Matrix Profile motif/discord exports when generated. |
-| **Dashboard** | Streamlit `Home.py` + `pages/` (Data Lab, Forecasting replay/diagnostics, Volatility, Regimes, Anomalies, Change Points) reading local `processed/`, `artifacts/`, and `reports/` exports. |
+| **Forecast evaluation** | Naive persistence and ridge/linear baselines, ARIMA benchmark-only, LightGBM/CatBoost. Metrics: MAE/RMSE, directional accuracy, correlation/IC, MASE, naive-scaled MAE (Diebold–Mariano where computed). Rolling-origin/walk-forward utilities in `src/models/rolling_validator.py`, exported when notebooks run. **New:** SHAP explainability (importance, beeswarm, dependence), residual diagnostics (Q-Q, error distribution). |
+| **Volatility/risk** | Rolling/realized-vol proxies and conditional volatility (GARCH with Student-t per `configs/pipeline.yaml`) compared with QLIKE/MAE where available; drawdown diagnostics. **New:** Volatility regime clustering (GMM), term structure, underwater drawdown plots. |
+| **Regimes** | GMM/HMM with diagnostics (log-likelihood/BIC, state shares, persistence/switches, regime-conditioned summaries) — exploratory, not ground truth. **New:** Gaussian component densities, transition heatmaps + persistence/duration, sequence analysis, feature distributions by regime. |
+| **Anomalies & breaks** | Isolation Forest scores with threshold sensitivity and market-context overlays; CUSUM change-points with local pre/post summaries; Matrix Profile motif/discord exports when generated. **New:** Distribution analysis (ECDF, violin, percentiles), anomaly clustering, pre/post statistical tests (t-test, Mann-Whitney). |
+| **Dashboard** | Streamlit `Home.py` + `pages/` (Data Lab, Forecasting replay/diagnostics, Volatility, Regimes, Anomalies, Change Points) reading local `processed/`, `artifacts/`, and `reports/` exports. **New:** Multi-tab layouts with enhanced visualizations across all pages. |
 
 ## Pipeline & artifacts
 
@@ -65,7 +65,7 @@ python -m pip install -r requirements.txt
 streamlit run Home.py
 ```
 
-Dashboard-only installs do not include research deps (`statsmodels`, `arch`, `stumpy`, `ruptures`, Spark/HF/MLflow, etc.). For full reproduction run notebooks 01→04 with `requirements-research.txt`.
+Dashboard-only installs do not include research deps (`statsmodels`, `arch`, `stumpy`, `ruptures`, `shap`, Spark/HF/MLflow, etc.). For full reproduction run notebooks 01→04 with `requirements-research.txt`.
 
 > **Data/artifacts not bundled.** Provision/regenerate locally (git-ignored). Treat exported `joblib`/`pickle` artifacts as trusted. See [DEPLOYMENT.md](DEPLOYMENT.md) for deployment details.
 

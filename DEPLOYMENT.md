@@ -13,15 +13,21 @@ artifacts from `artifacts/` and `reports/` (all git-ignored, not bundled).
 - **Forecasting (`pages/2_Forecasting.py`):** `processed/split_meta.yaml` and
   LightGBM/CatBoost artifacts in `artifacts/models/` (`lgbm_return.pkl`,
   `catboost_return.pkl`); optional exports `reports/metrics/walk_forward_summary.json`,
-  `artifacts/models/*_test_predictions.csv`.
+  `artifacts/models/*_test_predictions.csv`. **New:** SHAP explainability tab
+  (requires `shap>=0.44.0` and tree-based models).
 - **Volatility (`pages/3_Volatility.py`):** `artifacts/models/garch_cond_vol.csv`
   (optional realized-vol comparison uses overlapping feature columns).
+  **New:** Volatility regime analysis (GMM clustering) and term structure views.
 - **Regimes (`pages/4_Regimes.py`):** GMM/HMM `.pkl` in `artifacts/models/`,
   `artifacts/scalers/regime_scaler.pkl`, `processed/split_meta.yaml`; optional
-  `reports/metrics/regime_diagnostics.json`.
+  `reports/metrics/regime_diagnostics.json`. **New:** Gaussian component visualizations,
+  transition persistence/duration, regime sequence analysis.
 - **Anomalies (`pages/5_Anomalies.py`):** `artifacts/models/anomaly_scores.csv`;
   optional `artifacts/models/matrix_profile.csv` and `matrix_profile_meta.json`.
+  **New:** Distribution analysis (ECDF, violin), anomaly clustering, matrix profile density.
 - **Change points (`pages/6_ChangePoints.py`):** `artifacts/models/changepoints.csv`.
+  **New:** Pre/post statistical tests (t-test, Mann-Whitney), shift visualization,
+  penalty/model distributions.
 
 Pages degrade gracefully when data/artifacts are missing, but analyses are only
 meaningful with artifacts regenerated from the current code and notebooks.
@@ -71,7 +77,7 @@ streamlit run Home.py
 
 - Use the smallest dependency set for deployment; research/notebook deps are in
   `requirements-research.txt` (includes optional `statsmodels`, `arch`, `stumpy`,
-  `ruptures`, Spark/HF/MLflow stack).
+  `ruptures`, `shap`, Spark/HF/MLflow stack).
 - Load only trusted serialized artifacts (`pickle`/`joblib` can execute code).
 - Short-horizon BTC return forecasts are noisy; treat walk-forward/baseline
   comparisons and risk/diagnostic views as primary decision context.
