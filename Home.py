@@ -127,7 +127,6 @@ metrics = st.columns(5)
 metrics[0].metric(
     "Last close",
     format_price(latest_price),
-    delta=f"{daily_change:+.2f}% vs prior bar" if pd.notna(daily_change) else None,
 )
 metrics[1].metric(
     "Window return",
@@ -194,7 +193,7 @@ with tab_main:
                 low=chart_frame["low"],
                 close=chart_frame["close"],
                 name="BTC",
-                increasing_line_color=ACCENT,
+                increasing_line_color=BLUE,
                 decreasing_line_color=CORAL,
                 whiskerwidth=0.4,
             ),
@@ -219,7 +218,7 @@ with tab_main:
                 y=shown_prices,
                 name="Indexed price" if display_mode == "Indexed" else price_column,
                 mode="lines",
-                line=dict(color=ACCENT, width=2.2),
+                line=dict(color=BLUE, width=2.2),
             ),
             row=1,
             col=1,
@@ -233,7 +232,7 @@ with tab_main:
         )
         close_values = pd.to_numeric(chart_frame[price_column], errors="coerce")
         volume_color = [
-            ACCENT if pd.notna(open_) and pd.notna(close) and close >= open_ else CORAL
+            BLUE if pd.notna(open_) and pd.notna(close) and close >= open_ else CORAL
             for open_, close in zip(open_values, close_values)
         ]
         chart.add_trace(
@@ -460,12 +459,12 @@ with tab_calendar:
                 hovertemplate="%{y} %{x}<br>Return %{z:.2f}%<extra></extra>",
                 text=[[f"{v:.1f}%" if pd.notna(v) else "" for v in row] for row in calendar.values],
                 texttemplate="%{text}",
-                textfont=dict(size=11, color="white")
+                textfont=dict(size=9, color="white")
             )
         )
         calendar_chart.update_layout(
             template=chart_template(),
-            height=500,
+            height=460,
             margin=dict(l=12, r=12, t=20, b=12),
             xaxis_title="Year",
             yaxis_title="",
@@ -477,14 +476,14 @@ with tab_calendar:
         )
         
         st.markdown("#### Monthly Statistics")
-        mcols = st.columns(4)
+        mcols = st.columns(5)
         mcols[0].metric("Avg Monthly Return", f"{monthly_returns.mean():.2f}%")
         mcols[1].metric("Monthly Vol", f"{monthly_returns.std():.2f}%")
         mcols[2].metric("Best Month", f"{monthly_returns.max():.2f}%")
         mcols[3].metric("Worst Month", f"{monthly_returns.min():.2f}%")
         
         pos_months = (monthly_returns > 0).sum()
-        mcols[0].metric("Positive Months", f"{pos_months}/{len(monthly_returns)} ({pos_months/len(monthly_returns)*100:.0f}%)")
+        mcols[4].metric("Positive Months", f"{pos_months}/{len(monthly_returns)} ({pos_months/len(monthly_returns)*100:.0f}%)")
         
         st.caption(
             "Calendar cells summarize historical monthly movement. "
