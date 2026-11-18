@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 from plotly.subplots import make_subplots
+from scipy.stats import norm
 
 from src.dashboard import (
     ACCENT,
@@ -39,7 +40,6 @@ price_column = price_candidates[0] if price_candidates else None
 selected_file = st.session_state.get("_selected_file", "prepared dataset")
 resolution = st.session_state.get("resolution", "Raw")
 max_points = st.session_state.get("max_pts", 5000)
-light_canvas = False
 muted_color = "#9AABB5"
 grid_color = "#293743"
 
@@ -123,7 +123,7 @@ def format_price(value: float) -> str:
     return f"${value:.6f}"
 
 
-metrics = st.columns(4)
+metrics = st.columns(5)
 metrics[0].metric(
     "Last close",
     format_price(latest_price),
@@ -142,11 +142,16 @@ metrics[3].metric(
     "Worst drawdown",
     f"{max_drawdown:.2f}%" if pd.notna(max_drawdown) else "—",
 )
+metrics[4].metric(
+    "Volume in view",
+    f"{total_volume:,.0f}" if pd.notna(total_volume) else "—",
+)
 
 st.write("")
-overview_tab, rhythm_tab = st.tabs(["THE TAPE", "CALENDAR RHYTHM"])
 
-with overview_tab:
+tab_main, tab_dist, tab_calendar = st.tabs(["📈 THE TAPE", "📊 DISTRIBUTIONS", "📅 CALENDAR"])
+
+with tab_main:
     controls, note = st.columns([2, 3])
     with controls:
         display_mode = st.radio(
@@ -261,38 +266,45 @@ with overview_tab:
         config={"displaylogo": False, "scrollZoom": True},
     )
 
-    lower_left, lower_right = st.columns([1.1, 0.9], gap="large")
-    with lower_left:
-        st.markdown("#### Return texture")
+    col_left, col_right = st.columns([1.1, 0.9], gap="large")
+    with col_left:
+        st.markdown("#### Return Distribution")
         return_values = valid_returns.to_numpy(dtype=float) * 100
         return_values = return_values[np.isfinite(return_values)]
-        return_counts, return_edges = np.histogram(return_values, bins=65)
-        return_centers = (return_edges[:-1] + return_edges[1:]) / 2
-        return_chart = go.Figure()
-        return_chart.add_trace(
-            go.Bar(
-                x=return_centers,
-                y=return_counts,
-                name="Bar returns",
-                marker_color=BLUE,
-                opacity=0.82,
-            )
-        )
-        return_chart.add_vline(x=0, line_color=muted_color, line_dash="dot")
-        return_chart.update_layout(
-            template=chart_template(),
-            height=310,
-            margin=dict(l=10, r=10, t=10, b=10),
-            xaxis_title="Close-to-close return (%)",
-            yaxis_title="Bars",
-            showlegend=False,
-        )
-        return_chart.update_xaxes(gridcolor=grid_color)
-        return_chart.update_yaxes(gridcolor=grid_color)
-        st.plotly_chart(return_chart, use_container_width=True, config={"displaylogo": False})
+        
+        ret_fig = make_subplots(rows=2, cols=2, subplot_titles=("Histogram", "Box Plot", "ECDF", "Violin"))
+        
+        ret_fig.add_trace(go.Histogram(x=return_values, nbinsx=65, name="Bar returns",
+                                        marker_color=BLUE, opacity=0.8), row=1, col=1)
+        ret_fig.add_vline(x=0, line_dash="dot", line_color=muted_color, row=1, col=1)
+        ret_fig.add_vline(x=return_values.mean(), line_dash="dash", line_color=ACCENT, row=1, col=1)
+        
+        ret_fig.add_trace(go.Box(y=return_values, name="Returns", marker_color=BLUE,
+                                  boxpoints="outliers"), row=1, col=2)
+        
+        ecdf_x = np.sort(return_values)
+        ecdf_y = np.arange(1, len(ecdf_x) + 1) / len(ecdf_x)
+        ret_fig.add_trace(go.Scatter(x=ecdf_x, y=ecdf_y, mode="lines", name="ECDF",
+                                      line=dict(color=PURPLE, width=2)), row=2, col=1)
+        
+        ret_fig.add_trace(go.Violin(y=return_values, name="Returns", side="positive",
+                                     width=0.8, line_color=ACCENT, fillcolor=ACCENT, opacity=0.4,
+                                     box_visible=True, meanline_visible=True), row=2, col=2)
+        
+        ret_fig.update_layout(template=chart_template(), height=450,
+                             margin=dict(l=12, r=12, t=40, b=12), showlegend=False)
+        st.plotly_chart(ret_fig, use_container_width=True, config={"displaylogo": False})
+        
+        st.markdown("#### Return Statistics")
+        rcols = st.columns(5)
+        rcols[0].metric("Mean", f"{return_values.mean():.3f}%")
+        rcols[1].metric("Std", f"{return_values.std():.3f}%")
+        rcols[2].metric("Skew", f"{pd.Series(return_values).skew():.3f}")
+        rcols[3].metric("Kurtosis", f"{pd.Series(return_values).kurtosis():.3f}")
+        rcols[4].metric("Sharpe (est.)", f"{return_values.mean() / return_values.std() * np.sqrt(365*24):.2f}")
 
-    with lower_right:
-        st.markdown("#### Risk in the window")
+    with col_right:
+        st.markdown("#### Risk in the Window")
         vol_column = next(
             (
                 column
@@ -308,32 +320,100 @@ with overview_tab:
             vol_values = returns.rolling(30, min_periods=5).std()
             volatility_label = "30-bar realized volatility"
 
-        risk_chart = go.Figure()
+        risk_fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.08,
+                                 row_heights=[0.7, 0.3],
+                                 subplot_titles=(volatility_label, "Volatility Distribution"))
+        
         risk_frame = sample_for_chart(frame, max_points)
-        risk_chart.add_trace(
-            go.Scatter(
-                x=risk_frame[timestamp_column],
-                y=vol_values.loc[risk_frame.index],
-                name=volatility_label,
-                mode="lines",
-                line=dict(color=PURPLE, width=2),
-                fill="tozeroy",
-                fillcolor="rgba(166,154,200,0.12)",
-            )
-        )
-        risk_chart.update_layout(
-            template=chart_template(),
-            height=310,
-            margin=dict(l=10, r=10, t=10, b=10),
-            yaxis_title=volatility_label,
-            showlegend=False,
-            hovermode="x unified",
-        )
-        risk_chart.update_xaxes(showgrid=False)
-        risk_chart.update_yaxes(gridcolor=grid_color)
-        st.plotly_chart(risk_chart, use_container_width=True, config={"displaylogo": False})
+        risk_fig.add_trace(go.Scatter(
+            x=risk_frame[timestamp_column],
+            y=vol_values.loc[risk_frame.index],
+            name=volatility_label,
+            mode="lines",
+            line=dict(color=PURPLE, width=2),
+            fill="tozeroy",
+            fillcolor="rgba(166,154,200,0.12)",
+        ), row=1, col=1)
+        
+        vol_clean = vol_values.dropna()
+        if len(vol_clean) > 0:
+            risk_fig.add_trace(go.Histogram(x=vol_clean, nbinsx=50, name="Distribution",
+                                            marker_color=PURPLE, opacity=0.7), row=2, col=1)
+            risk_fig.add_vline(x=vol_clean.mean(), line_dash="dash", line_color=ACCENT, row=2, col=1)
+        
+        risk_fig.update_layout(template=chart_template(), height=500,
+                              margin=dict(l=12, r=12, t=40, b=12),
+                              hovermode="x unified", showlegend=False)
+        risk_fig.update_xaxes(showgrid=False)
+        risk_fig.update_yaxes(gridcolor=grid_color)
+        st.plotly_chart(risk_fig, use_container_width=True, config={"displaylogo": False})
 
-with rhythm_tab:
+with tab_dist:
+    st.markdown("#### Return vs Volatility Scatter")
+    ret_vol_frame = frame[[timestamp_column, price_column]].copy()
+    ret_vol_frame[timestamp_column] = pd.to_datetime(ret_vol_frame[timestamp_column], errors="coerce", utc=True)
+    ret_vol_frame[price_column] = pd.to_numeric(ret_vol_frame[price_column], errors="coerce")
+    ret_vol_frame = ret_vol_frame.dropna().sort_values(timestamp_column)
+    ret_vol_frame["return"] = ret_vol_frame[price_column].pct_change() * 100
+    ret_vol_frame["abs_return"] = ret_vol_frame["return"].abs()
+    ret_vol_frame["rolling_vol"] = ret_vol_frame["return"].rolling(30, min_periods=5).std() * 100
+    
+    vol_cols = [c for c in frame.columns if "rolling_vol" in c.lower() and "ann" not in c.lower()]
+    if vol_cols:
+        vol_col = vol_cols[0]
+        vol_data = frame[[timestamp_column, vol_col]].copy()
+        vol_data[timestamp_column] = pd.to_datetime(vol_data[timestamp_column], errors="coerce", utc=True)
+        vol_data[vol_col] = pd.to_numeric(vol_data[vol_col], errors="coerce")
+        vol_data = vol_data.dropna().sort_values(timestamp_column)
+        merged = pd.merge_asof(ret_vol_frame, vol_data, on=timestamp_column, direction="nearest", tolerance=pd.Timedelta("1D"))
+        merged = merged.dropna()
+        
+        if len(merged) > 10:
+            sc_fig = go.Figure()
+            sc_fig.add_trace(go.Scattergl(x=merged["return"], y=merged[vol_col],
+                                           mode="markers", name="Bars",
+                                           marker=dict(color=BLUE, size=4, opacity=0.4)))
+            sc_fig.add_hline(y=merged[vol_col].mean(), line_dash="dash", line_color="#9AA7B2")
+            sc_fig.add_vline(x=0, line_dash="dash", line_color="#9AA7B2")
+            sc_fig.update_layout(template=chart_template(), height=400,
+                                margin=dict(l=12, r=12, t=25, b=12),
+                                xaxis_title="Return (%)", yaxis_title=vol_col,
+                                hovermode="x unified")
+            st.plotly_chart(sc_fig, use_container_width=True, config={"displaylogo": False})
+    
+    st.markdown("#### Rolling Statistics")
+    if len(ret_vol_frame) > 30:
+        roll_fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.06,
+                                 row_heights=[0.4, 0.3, 0.3],
+                                 subplot_titles=("Rolling Mean Return", "Rolling Volatility", "Rolling Sharpe"))
+        
+        roll_fig.add_trace(go.Scatter(x=ret_vol_frame[timestamp_column], 
+                                      y=ret_vol_frame["return"].rolling(30, min_periods=5).mean(),
+                                      mode="lines", name="30-bar mean", line=dict(color=ACCENT, width=1.5)), row=1, col=1)
+        roll_fig.add_trace(go.Scatter(x=ret_vol_frame[timestamp_column], 
+                                      y=ret_vol_frame["return"].rolling(90, min_periods=10).mean(),
+                                      mode="lines", name="90-bar mean", line=dict(color=BLUE, width=1.5, dash="dot")), row=1, col=1)
+        roll_fig.add_hline(y=0, line_dash="dash", line_color="#9AA7B2", row=1, col=1)
+        
+        roll_fig.add_trace(go.Scatter(x=ret_vol_frame[timestamp_column], 
+                                      y=ret_vol_frame["rolling_vol"],
+                                      mode="lines", name="30-bar vol", line=dict(color=PURPLE, width=1.5)), row=2, col=1)
+        roll_fig.add_trace(go.Scatter(x=ret_vol_frame[timestamp_column], 
+                                      y=ret_vol_frame["return"].rolling(90, min_periods=10).std() * 100,
+                                      mode="lines", name="90-bar vol", line=dict(color=BLUE, width=1.5, dash="dot")), row=2, col=1)
+        
+        roll_sharpe = ret_vol_frame["return"].rolling(30, min_periods=5).mean() / (ret_vol_frame["return"].rolling(30, min_periods=5).std() + 1e-10)
+        roll_fig.add_trace(go.Scatter(x=ret_vol_frame[timestamp_column], y=roll_sharpe,
+                                      mode="lines", name="Rolling Sharpe", line=dict(color=CORAL, width=1.5)), row=3, col=1)
+        roll_fig.add_hline(y=0, line_dash="dash", line_color="#9AA7B2", row=3, col=1)
+        
+        roll_fig.update_layout(template=chart_template(), height=650,
+                              margin=dict(l=12, r=12, t=40, b=12), hovermode="x unified")
+        roll_fig.update_xaxes(showgrid=False)
+        roll_fig.update_yaxes(gridcolor=grid_color)
+        st.plotly_chart(roll_fig, use_container_width=True, config={"displaylogo": False})
+
+with tab_calendar:
     st.markdown(
         "### Monthly close-to-close returns",
         help="Each cell is the return from the prior month-end close to this month-end close.",
@@ -378,11 +458,14 @@ with rhythm_tab:
                 zmid=0,
                 colorbar=dict(title="Return %"),
                 hovertemplate="%{y} %{x}<br>Return %{z:.2f}%<extra></extra>",
+                text=[[f"{v:.1f}%" if pd.notna(v) else "" for v in row] for row in calendar.values],
+                texttemplate="%{text}",
+                textfont=dict(size=11, color="white")
             )
         )
         calendar_chart.update_layout(
             template=chart_template(),
-            height=430,
+            height=500,
             margin=dict(l=12, r=12, t=20, b=12),
             xaxis_title="Year",
             yaxis_title="",
@@ -392,6 +475,17 @@ with rhythm_tab:
             use_container_width=True,
             config={"displaylogo": False},
         )
+        
+        st.markdown("#### Monthly Statistics")
+        mcols = st.columns(4)
+        mcols[0].metric("Avg Monthly Return", f"{monthly_returns.mean():.2f}%")
+        mcols[1].metric("Monthly Vol", f"{monthly_returns.std():.2f}%")
+        mcols[2].metric("Best Month", f"{monthly_returns.max():.2f}%")
+        mcols[3].metric("Worst Month", f"{monthly_returns.min():.2f}%")
+        
+        pos_months = (monthly_returns > 0).sum()
+        mcols[0].metric("Positive Months", f"{pos_months}/{len(monthly_returns)} ({pos_months/len(monthly_returns)*100:.0f}%)")
+        
         st.caption(
             "Calendar cells summarize historical monthly movement. "
             "They are descriptive, not predictive."
