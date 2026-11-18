@@ -68,7 +68,7 @@ if model_input.empty:
     st.warning("No complete regime feature rows are available in this date range.")
     st.stop()
 try:
-    scaled = scaler.transform(model_input)
+    scaled = scaler.transform(model_input.to_numpy())
     states = model.predict(scaled)
 except Exception as error:
     st.error("The saved regime model is incompatible with the selected feature data.")

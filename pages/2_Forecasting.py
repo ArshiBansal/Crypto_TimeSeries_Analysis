@@ -152,7 +152,8 @@ if work.empty:
 
 sampled = sample_for_chart(work, forecast_points)
 try:
-    predictions = model.predict(scaler.transform(sampled[feature_columns]))
+    X_scaled = scaler.transform(sampled[feature_columns].to_numpy())
+    predictions = model.predict(X_scaled)
 except Exception as error:
     st.error("The model could not predict from the selected feature set.")
     st.exception(error)
@@ -273,7 +274,7 @@ with tab3:
     try:
         import shap
         with st.spinner("Computing SHAP values..."):
-            X_scaled = scaler.transform(sampled[feature_columns])
+            X_scaled = scaler.transform(sampled[feature_columns].to_numpy())
             
             if hasattr(model, "predict"):
                 if hasattr(model, "feature_importances_"):
